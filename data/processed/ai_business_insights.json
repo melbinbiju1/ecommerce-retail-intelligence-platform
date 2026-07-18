@@ -1,0 +1,93 @@
+{
+  "executive_summary": {
+    "title": "Executive Business Summary",
+    "summary": "The e-commerce platform shows business performance across revenue, orders, customers, sellers, and recent monthly trends.",
+    "key_findings": [
+      "The platform processed 98,666 orders with total revenue value of 15,843,553.24.",
+      "The business includes 96,096 unique customers and 3,095 sellers.",
+      "The average order value is 160.58.",
+      "The latest meaningful sales period is 2018-08, with revenue of 1,003,308.47 from 6,452 orders."
+    ],
+    "recommended_actions": [
+      "Monitor monthly revenue and order trends to identify demand changes early.",
+      "Use customer geography and product category performance to find priority growth areas.",
+      "Review sales KPIs together with operational alerts before making business decisions."
+    ],
+    "source_views": [
+      "fact_sales",
+      "dim_customer",
+      "dim_seller",
+      "vw_monthly_sales"
+    ]
+  },
+  "sales_performance": {
+    "title": "Sales Performance Summary",
+    "summary": "The sales performance layer highlights product category performance and customer geography patterns.",
+    "key_findings": [
+      "The highest revenue product category is health_beauty with revenue of 1,441,248.07.",
+      "The highest revenue customer state is SP with revenue of 5,921,678.12."
+    ],
+    "recommended_actions": [
+      "Prioritise high-performing product categories in dashboard storytelling.",
+      "Use customer state performance to identify strong regional demand.",
+      "Compare product revenue with review scores to avoid focusing only on sales volume."
+    ],
+    "source_views": [
+      "vw_product_performance",
+      "vw_customer_state_performance"
+    ]
+  },
+  "operational_risk": {
+    "title": "Operational Risk Summary",
+    "summary": "The operational layer highlights anomaly alerts, seller risk, category risk, and business areas requiring attention.",
+    "key_findings": [
+      "The anomaly detection layer generated 696 operational alerts.",
+      "There are 576 high severity alerts and 120 medium severity alerts.",
+      "The most common alert type is SELLER_PERFORMANCE_RISK with 424 alerts.",
+      "A high-risk seller example is 20f0aeea30bc3b8c4420be8ced4226c0 with late delivery rate 100.00% and average review score nan.",
+      "A high-risk category example is security_and_services with risk level high."
+    ],
+    "recommended_actions": [
+      "Prioritise high severity operational alerts before medium severity alerts.",
+      "Review sellers with high late delivery rates and low review scores.",
+      "Investigate product categories with weak review performance or delivery risk.",
+      "Use alert type trends to decide whether issues are related to delivery, seller performance, revenue, freight, or customer satisfaction."
+    ],
+    "source_views": [
+      "vw_operational_alert_summary",
+      "vw_operational_alerts_by_type",
+      "vw_high_risk_sellers",
+      "vw_high_risk_categories"
+    ]
+  },
+  "recommendations": {
+    "title": "AI-Ready Business Recommendations",
+    "summary": "The project is ready to support AI-assisted business decision-making because the insights are generated from trusted dbt models, KPI views, and operational risk views.",
+    "key_findings": [
+      "The platform processed 98,666 orders with total revenue value of 15,843,553.24.",
+      "The business includes 96,096 unique customers and 3,095 sellers.",
+      "The highest revenue product category is health_beauty with revenue of 1,441,248.07.",
+      "The anomaly detection layer generated 696 operational alerts.",
+      "There are 576 high severity alerts and 120 medium severity alerts."
+    ],
+    "recommended_actions": [
+      "Use the executive dashboard to monitor revenue, order volume, customers, sellers, and review performance.",
+      "Use operational anomaly alerts as an early warning layer for delivery, seller, freight, review, and revenue issues.",
+      "Create a weekly review process focused on high-risk sellers and high-risk product categories.",
+      "Expose the insights layer through FastAPI so dashboards, apps, and future AI tools can reuse the same trusted outputs.",
+      "In the Azure version, store API keys in Azure Key Vault and orchestrate the pipeline with Azure Data Factory."
+    ],
+    "source_views": [
+      "dim_customer",
+      "dim_seller",
+      "fact_sales",
+      "vw_customer_state_performance",
+      "vw_high_risk_categories",
+      "vw_high_risk_sellers",
+      "vw_monthly_sales",
+      "vw_operational_alert_summary",
+      "vw_operational_alerts_by_type",
+      "vw_product_performance"
+    ]
+  }
+}

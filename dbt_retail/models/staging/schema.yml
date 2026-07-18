@@ -1,0 +1,143 @@
+version: 2
+
+sources:
+  - name: raw
+    database: retail_intelligence
+    schema: main
+    description: "Raw Olist source tables loaded from CSV files using Python ingestion."
+    tables:
+      - name: raw_customers
+        description: "Raw customer records from the Olist customers dataset."
+      - name: raw_geolocation
+        description: "Raw Brazilian zip-code geolocation reference data."
+      - name: raw_order_items
+        description: "Raw order item records containing product, seller, price, and freight data."
+      - name: raw_order_payments
+        description: "Raw payment records containing payment type, installments, and value."
+      - name: raw_order_reviews
+        description: "Raw customer review records."
+      - name: raw_orders
+        description: "Raw order lifecycle records including purchase, approval, delivery, and estimated delivery dates."
+      - name: raw_products
+        description: "Raw product records and product attributes."
+      - name: raw_sellers
+        description: "Raw seller records and seller location details."
+      - name: raw_product_category_translation
+        description: "Product category translation from Portuguese to English."
+
+models:
+  - name: stg_customers
+    description: "Cleaned customer dimension staging model."
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier used in orders."
+        tests:
+          - not_null
+          - unique
+      - name: customer_unique_id
+        description: "Unique customer person identifier."
+        tests:
+          - not_null
+      - name: customer_state
+        description: "Customer state code."
+        tests:
+          - not_null
+
+  - name: stg_sellers
+    description: "Cleaned seller staging model."
+    columns:
+      - name: seller_id
+        description: "Unique seller identifier."
+        tests:
+          - not_null
+          - unique
+      - name: seller_state
+        description: "Seller state code."
+        tests:
+          - not_null
+
+  - name: stg_product_category_translation
+    description: "Product category translation staging model."
+    columns:
+      - name: product_category_name
+        tests:
+          - not_null
+          - unique
+      - name: product_category_name_english
+        tests:
+          - not_null
+
+  - name: stg_products
+    description: "Cleaned product staging model with English category names."
+    columns:
+      - name: product_id
+        description: "Unique product identifier."
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_orders
+    description: "Cleaned order lifecycle staging model with delivery flags."
+    columns:
+      - name: order_id
+        description: "Unique order identifier."
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: "Customer identifier."
+        tests:
+          - not_null
+      - name: order_status
+        description: "Order lifecycle status."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['delivered', 'shipped', 'canceled', 'unavailable', 'invoiced', 'processing', 'created', 'approved']
+
+  - name: stg_order_items
+    description: "Cleaned order item staging model."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: product_id
+        tests:
+          - not_null
+      - name: seller_id
+        tests:
+          - not_null
+
+  - name: stg_order_payments
+    description: "Cleaned order payment staging model."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: payment_type
+        tests:
+          - not_null
+
+  - name: stg_order_reviews
+    description: "Cleaned order review staging model."
+    columns:
+      - name: review_id
+        tests:
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+      - name: review_score
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+
+  - name: stg_geolocation
+    description: "Deduplicated geolocation staging model."
+    columns:
+      - name: geolocation_zip_code_prefix
+        tests:
+          - not_null

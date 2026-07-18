@@ -1,0 +1,252 @@
+{
+  "context_name": "E-Commerce Retail Intelligence LLM Context",
+  "generated_at": "2026-07-10 12:14:22",
+  "purpose": "Structured business context prepared from trusted dbt-built views. This context can be passed to a future LLM to generate natural-language executive insights without exposing raw source tables.",
+  "data_governance_note": "The LLM should answer only using the provided curated context. It should not invent figures, expose raw data, or make unsupported claims.",
+  "trusted_source_views": [
+    "vw_executive_summary",
+    "vw_monthly_sales",
+    "vw_operational_alert_summary",
+    "vw_operational_alerts_by_type",
+    "vw_high_risk_sellers",
+    "vw_high_risk_categories"
+  ],
+  "executive_summary": {
+    "total_orders": 98666.0,
+    "total_order_items": 112650.0,
+    "total_product_revenue": 13591643.7,
+    "total_freight_revenue": 2251909.54,
+    "total_revenue": 15843553.24,
+    "avg_item_price": 120.65,
+    "avg_freight_value": 19.99,
+    "avg_item_total_value": 140.64,
+    "delivered_item_rows": 110197.0,
+    "late_delivery_item_rows": 8715.0
+  },
+  "recent_monthly_sales": [
+    {
+      "year": 2018,
+      "month": 9,
+      "year_month": "2018-09",
+      "total_orders": 1,
+      "total_order_items": 1,
+      "product_revenue": 145.0,
+      "freight_revenue": 21.46,
+      "total_revenue": 166.46,
+      "avg_item_total_value": 166.46
+    },
+    {
+      "year": 2018,
+      "month": 8,
+      "year_month": "2018-08",
+      "total_orders": 6452,
+      "total_order_items": 7248,
+      "product_revenue": 854686.33,
+      "freight_revenue": 148622.14,
+      "total_revenue": 1003308.47,
+      "avg_item_total_value": 138.43
+    },
+    {
+      "year": 2018,
+      "month": 7,
+      "year_month": "2018-07",
+      "total_orders": 6273,
+      "total_order_items": 7092,
+      "product_revenue": 895507.22,
+      "freight_revenue": 163220.81,
+      "total_revenue": 1058728.03,
+      "avg_item_total_value": 149.28
+    },
+    {
+      "year": 2018,
+      "month": 6,
+      "year_month": "2018-06",
+      "total_orders": 6160,
+      "total_order_items": 7078,
+      "product_revenue": 865124.31,
+      "freight_revenue": 157552.8,
+      "total_revenue": 1022677.11,
+      "avg_item_total_value": 144.49
+    },
+    {
+      "year": 2018,
+      "month": 5,
+      "year_month": "2018-05",
+      "total_orders": 6853,
+      "total_order_items": 7925,
+      "product_revenue": 996517.68,
+      "freight_revenue": 153264.14,
+      "total_revenue": 1149781.82,
+      "avg_item_total_value": 145.08
+    },
+    {
+      "year": 2018,
+      "month": 4,
+      "year_month": "2018-04",
+      "total_orders": 6934,
+      "total_order_items": 7975,
+      "product_revenue": 996647.75,
+      "freight_revenue": 163050.29,
+      "total_revenue": 1159698.04,
+      "avg_item_total_value": 145.42
+    }
+  ],
+  "operational_alert_summary": {
+    "total_alerts": 696,
+    "critical_alerts": 0,
+    "high_alerts": 576,
+    "medium_alerts": 120,
+    "low_alerts": 0,
+    "alert_types": 8,
+    "business_areas_affected": 7
+  },
+  "top_operational_alert_types": [
+    {
+      "alert_type": "SELLER_PERFORMANCE_RISK",
+      "business_area": "seller_operations",
+      "severity": "high",
+      "alert_count": 424,
+      "avg_actual_value": 27.14,
+      "avg_expected_value": 15.0,
+      "avg_difference_percentage": NaN
+    },
+    {
+      "alert_type": "REVENUE_DROP",
+      "business_area": "sales",
+      "severity": "high",
+      "alert_count": 85,
+      "avg_actual_value": 13534.22,
+      "avg_expected_value": 26570.98,
+      "avg_difference_percentage": -49.0
+    },
+    {
+      "alert_type": "FREIGHT_COST_SPIKE",
+      "business_area": "logistics",
+      "severity": "medium",
+      "alert_count": 53,
+      "avg_actual_value": 4499.35,
+      "avg_expected_value": 2460.76,
+      "avg_difference_percentage": 90.02
+    },
+    {
+      "alert_type": "ORDER_VOLUME_SPIKE",
+      "business_area": "sales",
+      "severity": "medium",
+      "alert_count": 51,
+      "avg_actual_value": 194.16,
+      "avg_expected_value": 105.17,
+      "avg_difference_percentage": 90.13
+    },
+    {
+      "alert_type": "LOW_REVIEW_SPIKE",
+      "business_area": "customer_satisfaction",
+      "severity": "high",
+      "alert_count": 50,
+      "avg_actual_value": 45.99,
+      "avg_expected_value": 30.0,
+      "avg_difference_percentage": NaN
+    }
+  ],
+  "sample_high_risk_sellers": [
+    {
+      "seller_id": "20f0aeea30bc3b8c4420be8ced4226c0",
+      "seller_city": "santa barbara d'oeste",
+      "seller_state": "SP",
+      "total_orders": 1,
+      "total_revenue": 29.42,
+      "late_delivery_rate": 100.0,
+      "avg_review_score": NaN,
+      "seller_risk_level": "high"
+    },
+    {
+      "seller_id": "80ceebb4ee9b31afb6c6a916a574a1e2",
+      "seller_city": "londrina",
+      "seller_state": "PR",
+      "total_orders": 1,
+      "total_revenue": 6922.21,
+      "late_delivery_rate": 100.0,
+      "avg_review_score": NaN,
+      "seller_risk_level": "high"
+    },
+    {
+      "seller_id": "bcd2d7510d58e293f20fad6438c1b314",
+      "seller_city": "curitiba",
+      "seller_state": "PR",
+      "total_orders": 1,
+      "total_revenue": 39.46,
+      "late_delivery_rate": 100.0,
+      "avg_review_score": NaN,
+      "seller_risk_level": "high"
+    },
+    {
+      "seller_id": "154bdf805377afea75a3bd158e9eab10",
+      "seller_city": "ibitinga",
+      "seller_state": "SP",
+      "total_orders": 1,
+      "total_revenue": 109.72,
+      "late_delivery_rate": 100.0,
+      "avg_review_score": 1.0,
+      "seller_risk_level": "high"
+    },
+    {
+      "seller_id": "19484c79cef6c062cb177aa4ef2fcc3c",
+      "seller_city": "valinhos",
+      "seller_state": "SP",
+      "total_orders": 1,
+      "total_revenue": 212.06,
+      "late_delivery_rate": 100.0,
+      "avg_review_score": 1.0,
+      "seller_risk_level": "high"
+    }
+  ],
+  "sample_high_risk_categories": [
+    {
+      "product_category_name_english": "security_and_services",
+      "total_orders": 2,
+      "total_revenue": 324.51,
+      "avg_review_score": 2.5,
+      "late_delivery_rate": 0.0,
+      "category_risk_level": "high"
+    },
+    {
+      "product_category_name_english": "home_comfort_2",
+      "total_orders": 24,
+      "total_revenue": 1170.58,
+      "avg_review_score": 3.63,
+      "late_delivery_rate": 16.67,
+      "category_risk_level": "medium"
+    },
+    {
+      "product_category_name_english": "office_furniture",
+      "total_orders": 1273,
+      "total_revenue": 344082.76,
+      "avg_review_score": 3.49,
+      "late_delivery_rate": 8.82,
+      "category_risk_level": "medium"
+    },
+    {
+      "product_category_name_english": "portateis_cozinha_e_preparadores_de_alimentos",
+      "total_orders": 14,
+      "total_revenue": 4278.29,
+      "avg_review_score": 3.27,
+      "late_delivery_rate": 6.67,
+      "category_risk_level": "medium"
+    },
+    {
+      "product_category_name_english": "diapers_and_hygiene",
+      "total_orders": 27,
+      "total_revenue": 2141.27,
+      "avg_review_score": 3.26,
+      "late_delivery_rate": 2.56,
+      "category_risk_level": "medium"
+    }
+  ],
+  "suggested_llm_tasks": [
+    "Generate a short executive summary.",
+    "Explain the most important operational risks.",
+    "Recommend actions for high-risk sellers and categories.",
+    "Summarise revenue and order trends.",
+    "Create a business-friendly weekly performance update."
+  ],
+  "suggested_system_prompt": "You are a business insights assistant for an e-commerce data platform. Use only the structured context provided. Do not invent numbers. When a figure is not available, say it is not available. Explain insights clearly for business users and recommend practical actions."
+}

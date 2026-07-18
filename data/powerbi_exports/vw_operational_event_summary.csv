@@ -1,0 +1,2 @@
+total_event_files_processed,total_records_received,total_valid_records,total_failed_records,valid_record_percentage,failed_record_percentage,successful_files,partial_success_files,failed_files
+1,100,100,0,100.0,0.0,1,0,0

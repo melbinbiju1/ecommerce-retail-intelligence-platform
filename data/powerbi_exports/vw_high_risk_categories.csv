@@ -1,0 +1,7 @@
+product_category_name_english,total_orders,total_items_sold,total_revenue,avg_item_price,avg_review_score,late_delivery_items,late_delivery_rate,category_risk_level
+security_and_services,2,2,324.51,141.65,2.5,0,0.0,high
+home_comfort_2,24,30,1170.58,25.34,3.63,5,16.67,medium
+office_furniture,1273,1701,344082.76,161.8,3.49,150,8.82,medium
+portateis_cozinha_e_preparadores_de_alimentos,14,15,4278.29,264.57,3.27,1,6.67,medium
+diapers_and_hygiene,27,39,2141.27,40.19,3.26,1,2.56,medium
+pc_gamer,8,9,1679.52,171.77,3.33,0,0.0,medium

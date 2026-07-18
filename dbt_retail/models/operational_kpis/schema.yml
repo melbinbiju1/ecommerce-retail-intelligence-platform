@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: operations_external
+    database: retail_intelligence
+    schema: main
+    description: "Operational tables created by Python anomaly detection and event pipeline scripts."
+    tables:
+      - name: ops_anomaly_alerts
+        description: "Operational anomaly alerts created by the Python anomaly detection script."
+      - name: ops_anomaly_rules
+        description: "Operational anomaly detection rule definitions."
+      - name: ops_event_log
+        description: "File-level operational event pipeline log."
+      - name: ops_event_records
+        description: "Valid operational event records processed by the event pipeline."
+      - name: ops_event_failed_records
+        description: "Invalid operational event records with failure reasons."
+
+models:
+  - name: vw_operational_alert_summary
+    description: "Summary count of operational anomaly alerts by severity."
+  - name: vw_operational_alerts_by_type
+    description: "Operational anomaly alert counts by alert type and business area."
+  - name: vw_operational_alerts_by_severity
+    description: "Operational anomaly alert distribution by severity."
+  - name: vw_recent_operational_alerts
+    description: "Detailed operational alerts with descriptions and recommended actions."
+  - name: vw_high_risk_sellers
+    description: "Sellers with high or medium operational risk."
+  - name: vw_high_risk_categories
+    description: "Product categories with high or medium operational risk."
+  - name: vw_operational_event_summary
+    description: "Summary of operational event file processing."
+  - name: vw_operational_event_records
+    description: "Valid operational event records for monitoring."
+  - name: vw_operational_risk_summary
+    description: "Combined risk summary from anomaly alerts and event records."

@@ -1,0 +1,16 @@
+risk_source,business_area,severity,risk_count
+anomaly_alerts,customer_satisfaction,high,50
+anomaly_alerts,delivery,high,17
+anomaly_alerts,logistics,medium,53
+anomaly_alerts,orders,medium,15
+anomaly_alerts,product_category,medium,1
+anomaly_alerts,sales,high,85
+anomaly_alerts,sales,medium,51
+anomaly_alerts,seller_operations,high,424
+event_records,customer_satisfaction,high,6
+event_records,delivery,high,4
+event_records,logistics,medium,3
+event_records,orders,medium,1
+event_records,sales,high,12
+event_records,sales,medium,10
+event_records,seller_operations,high,64

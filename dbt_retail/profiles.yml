@@ -1,0 +1,11 @@
+ecommerce_retail_intelligence:
+  target: dev
+  outputs:
+    dev:
+      type: sqlite
+      threads: 1
+      database: retail_intelligence
+      schema: main
+      schemas_and_paths:
+        main: "C:/Users/melbi/OneDrive/Desktop/portfolio_projects/ecommerce_retail_intelligence_platform/retail_intelligence.db"
+      schema_directory: "C:/Users/melbi/OneDrive/Desktop/portfolio_projects/ecommerce_retail_intelligence_platform"

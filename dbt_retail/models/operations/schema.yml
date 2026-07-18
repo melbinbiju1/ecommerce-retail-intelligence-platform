@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: ops_daily_metrics
+    description: "Daily operational metrics used for anomaly detection and business monitoring."
+    columns:
+      - name: metric_date
+        tests:
+          - not_null
+          - unique
+      - name: total_orders
+        tests:
+          - not_null
+      - name: total_revenue
+        tests:
+          - not_null
+
+  - name: ops_seller_metrics
+    description: "Seller-level operational metrics used to identify seller risk."
+    columns:
+      - name: seller_id
+        tests:
+          - not_null
+          - unique
+      - name: seller_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['low', 'medium', 'high']
+
+  - name: ops_category_metrics
+    description: "Product category-level operational metrics used to identify category risk."
+    columns:
+      - name: product_category_name_english
+        tests:
+          - not_null
+          - unique
+      - name: category_risk_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['low', 'medium', 'high']

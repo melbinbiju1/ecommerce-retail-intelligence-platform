@@ -1,0 +1,2 @@
+total_orders,total_order_items,total_product_revenue,total_freight_revenue,total_revenue,avg_item_price,avg_freight_value,avg_item_total_value,delivered_item_rows,late_delivery_item_rows
+98666,112650,13591643.7,2251909.54,15843553.24,120.65,19.99,140.64,110197,8715

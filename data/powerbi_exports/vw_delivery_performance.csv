@@ -1,0 +1,9 @@
+order_status,total_orders,delivered_orders,late_deliveries,missing_delivery_date_orders,avg_delivery_days,min_delivery_days,max_delivery_days
+delivered,96478,96478,7826,8,12.09,0.0,209.0
+shipped,1107,0,0,0,,,
+canceled,625,0,1,0,19.83,7.0,35.0
+unavailable,609,0,0,0,,,
+invoiced,314,0,0,0,,,
+processing,301,0,0,0,,,
+created,5,0,0,0,,,
+approved,2,0,0,0,,,

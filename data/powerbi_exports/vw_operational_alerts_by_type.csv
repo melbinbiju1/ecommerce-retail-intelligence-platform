@@ -1,0 +1,9 @@
+alert_type,business_area,severity,alert_count,avg_actual_value,avg_expected_value,avg_difference_percentage
+SELLER_PERFORMANCE_RISK,seller_operations,high,424,27.14,15.0,
+REVENUE_DROP,sales,high,85,13534.22,26570.98,-49.0
+FREIGHT_COST_SPIKE,logistics,medium,53,4499.35,2460.76,90.02
+ORDER_VOLUME_SPIKE,sales,medium,51,194.16,105.17,90.13
+LOW_REVIEW_SPIKE,customer_satisfaction,high,50,45.99,30.0,
+DELIVERY_DELAY_SPIKE,delivery,high,17,32.94,25.0,
+CANCELLATION_SPIKE,orders,medium,15,25.93,5.0,
+CATEGORY_PERFORMANCE_RISK,product_category,medium,1,0.0,15.0,

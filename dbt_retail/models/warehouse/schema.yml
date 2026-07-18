@@ -1,0 +1,107 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Date dimension used for time-based analysis."
+    columns:
+      - name: date_key
+        description: "Surrogate date key."
+        tests:
+          - not_null
+          - unique
+      - name: full_date
+        description: "Calendar date."
+
+  - name: dim_customer
+    description: "Customer dimension with location attributes."
+    columns:
+      - name: customer_key
+        description: "Customer surrogate key."
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_seller
+    description: "Seller dimension with seller location attributes."
+    columns:
+      - name: seller_key
+        description: "Seller surrogate key."
+        tests:
+          - not_null
+          - unique
+      - name: seller_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_product
+    description: "Product dimension with category and product attributes."
+    columns:
+      - name: product_key
+        description: "Product surrogate key."
+        tests:
+          - not_null
+          - unique
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+
+  - name: fact_sales
+    description: "Main order-item level sales fact table."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: customer_key
+        tests:
+          - not_null
+      - name: product_key
+        tests:
+          - not_null
+      - name: seller_key
+        tests:
+          - not_null
+      - name: item_total_value
+        description: "Item price plus freight value."
+
+  - name: fact_delivery
+    description: "Order-level delivery performance fact table."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: order_status
+        tests:
+          - not_null
+
+  - name: fact_payments
+    description: "Payment transaction fact table."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: payment_type
+        tests:
+          - not_null
+
+  - name: fact_reviews
+    description: "Customer review fact table."
+    columns:
+      - name: review_id
+        tests:
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+      - name: review_score
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
