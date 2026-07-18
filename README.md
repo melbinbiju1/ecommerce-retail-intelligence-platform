@@ -1,5 +1,7 @@
 # E-Commerce Retail Intelligence Platform
 
+![CI Pipeline](https://github.com/melbinbiju1/ecommerce-retail-intelligence-platform/actions/workflows/ci.yml/badge.svg)
+
 An end-to-end Data Engineering and AI Business Insights platform built using the Olist Brazilian E-Commerce dataset.
 
 ## Project Objective
