@@ -1,4 +1,0 @@
-table_name,exists,row_count
-inventory_event_log,True,1
-inventory_event_records,True,100
-inventory_event_failed_records,True,0

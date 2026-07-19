@@ -485,3 +485,137 @@ Future improvements can include:
 - Multiple file ingestion
 - Azure Key Vault integration
 - Monitoring and alerting
+
+
+## Azure App Service Governance
+
+The deployed FastAPI backend introduces a cloud application layer that requires governance around secrets, access control, deployment, and operational reliability.
+
+### Runtime Configuration Governance
+
+The deployed API is configured using Azure App Service environment variables.
+
+Secrets and runtime configuration values are not committed to GitHub.
+
+Sensitive values include:
+
+- Azure SQL username
+- Azure SQL password
+- API keys
+- Connection strings
+
+The `.env.example` file contains placeholders only and is safe for documentation.
+
+The real `.env` file is excluded from version control.
+
+---
+
+### API Access Control
+
+The API uses API key based role-based access control.
+
+| Role | Access Level |
+|---|---|
+| Admin | Full API access |
+| Analyst | Business, operations, and insights access |
+| Viewer | Limited read-only access |
+
+Protected endpoints require the following header:
+
+```text
+X-API-Key
+```
+
+This prevents unauthenticated access to business and operational data endpoints.
+
+---
+
+### Container Registry Access
+
+Azure App Service pulls the Docker image from Azure Container Registry using managed identity.
+
+The Web App has the following permission on the registry:
+
+```text
+AcrPull
+```
+
+This is preferred over enabling ACR admin credentials because it avoids registry username/password usage.
+
+---
+
+### Database Access
+
+The deployed API connects to Azure SQL Database using environment variables.
+
+Current implementation:
+
+```text
+App Service environment variables → SQLAlchemy / pyodbc → Azure SQL Database
+```
+
+Future improvement:
+
+```text
+App Service managed identity → Azure Key Vault → Azure SQL secrets
+```
+
+Azure Key Vault will be added in a later phase to centralize secret management.
+
+---
+
+### Deployment Governance
+
+The deployment uses a controlled image-based release process:
+
+```text
+Build Docker image locally
+        ↓
+Push image to Azure Container Registry
+        ↓
+Azure App Service pulls approved image tag
+        ↓
+Verify deployed endpoints
+```
+
+This makes deployments repeatable and auditable.
+
+The deployed image tag used in this phase is:
+
+```text
+latest
+```
+
+For production-grade release governance, versioned tags such as `v1.0.0` would be preferable.
+
+---
+
+### Verification Governance
+
+The deployed API is validated using:
+
+```powershell
+python scripts\verify_azure_app_deployment.py
+```
+
+The verification produces a CSV report:
+
+```text
+data/processed/azure_app_deployment_verification_report.csv
+```
+
+This report provides evidence that the deployed API endpoints are available and returning successful responses.
+
+---
+
+### Current Limitations
+
+Current limitations are intentionally documented for transparency:
+
+- API keys are stored as App Service environment variables.
+- Azure SQL credentials are stored as App Service environment variables.
+- The deployed container uses the `latest` image tag.
+- Full Azure Monitor alerting is not yet configured.
+- Key Vault integration is not yet implemented.
+
+These limitations will be addressed in later phases through Azure Key Vault, monitoring, and final deployment hardening.

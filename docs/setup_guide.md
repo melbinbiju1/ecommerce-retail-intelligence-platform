@@ -440,3 +440,162 @@ Detailed Azure SQL documentation is available in:
 ```text
 docs/azure_sql_database.md
 ```
+
+## Azure App Service Deployment Setup
+
+This section explains how to deploy the FastAPI backend to Azure App Service as a Docker container.
+
+### Prerequisites
+
+Before deploying the API, complete the following phases:
+
+- Azure Blob Storage setup
+- Azure SQL Database setup
+- Azure Data Factory setup
+- Docker setup
+- Azure Container Registry setup
+- API serving views migrated to Azure SQL
+
+Required local tools:
+
+- Docker Desktop
+- Azure CLI
+- Git
+- Python virtual environment
+
+---
+
+### 1. Build the Docker Image
+
+From the project root, run:
+
+```powershell
+docker build -t ecommerce-retail-api .
+```
+
+---
+
+### 2. Log in to Azure Container Registry
+
+```powershell
+az acr login --name acrecommerceretailmelbin
+```
+
+If `az` is not available in the current terminal, use the full Azure CLI path:
+
+```powershell
+& "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd" acr login --name acrecommerceretailmelbin
+```
+
+---
+
+### 3. Tag the Docker Image
+
+```powershell
+docker tag ecommerce-retail-api acrecommerceretailmelbin.azurecr.io/ecommerce-retail-api:latest
+```
+
+---
+
+### 4. Push the Docker Image
+
+```powershell
+docker push acrecommerceretailmelbin.azurecr.io/ecommerce-retail-api:latest
+```
+
+---
+
+### 5. Create Azure App Service
+
+Create a Web App with these settings:
+
+| Field | Value |
+|---|---|
+| Publish | Container |
+| Operating System | Linux |
+| Region | France Central |
+| Image source | Azure Container Registry |
+| Registry | `acrecommerceretailmelbin` |
+| Image | `ecommerce-retail-api` |
+| Tag | `latest` |
+| Port | `8000` |
+
+The deployed URL is:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net
+```
+
+---
+
+### 6. Configure Managed Identity
+
+Enable system-assigned managed identity for the Web App:
+
+```text
+App Service → Identity → System assigned → On
+```
+
+Then assign the identity to Azure Container Registry:
+
+```text
+Container Registry → Access control (IAM) → Add role assignment
+```
+
+Use:
+
+| Field | Value |
+|---|---|
+| Role | `AcrPull` |
+| Assign access to | Managed identity |
+| Managed identity type | App Service |
+| Selected identity | `app-ecommerce-retail-api-melbin` |
+
+---
+
+### 7. Add App Service Environment Variables
+
+Go to:
+
+```text
+App Service → Settings → Environment variables → App settings
+```
+
+Add:
+
+```text
+APP_ENV=azure
+AZURE_SQL_SERVER=<your-server-name>.database.windows.net
+AZURE_SQL_DATABASE=sqldb-ecommerce-retail-intelligence
+AZURE_SQL_USERNAME=<your-sql-username>
+AZURE_SQL_PASSWORD=<your-sql-password>
+AZURE_SQL_DRIVER=ODBC Driver 18 for SQL Server
+ADMIN_API_KEY=admin-demo-key
+ANALYST_API_KEY=analyst-demo-key
+VIEWER_API_KEY=viewer-demo-key
+WEBSITES_PORT=8000
+```
+
+Save and restart the Web App.
+
+---
+
+### 8. Verify Deployment
+
+Run:
+
+```powershell
+python scripts\verify_azure_app_deployment.py
+```
+
+Expected result:
+
+```text
+Azure App deployment verification passed.
+```
+
+The report is saved to:
+
+```text
+data/processed/azure_app_deployment_verification_report.csv
+```

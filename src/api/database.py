@@ -1,18 +1,49 @@
 from pathlib import Path
+import os
 import sys
-from sqlalchemy import text
+
 import pandas as pd
+from sqlalchemy import text
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(PROJECT_ROOT))
 
-from src.utils.db_utils import get_engine
-from src.api.logging_config import api_logger
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from src.utils.db_utils import get_engine as get_sqlite_engine  # noqa: E402
+from src.cloud.azure_sql_database import get_azure_sql_engine  # noqa: E402
+from src.api.logging_config import api_logger  # noqa: E402
+
+
+def get_api_database_engine():
+    """
+    Returns the correct database engine for the API.
+
+    Local development:
+        APP_ENV=local or missing -> SQLite
+
+    Azure deployment:
+        APP_ENV=azure -> Azure SQL Database
+    """
+    app_env = os.getenv("APP_ENV", "local").lower().strip()
+
+    if app_env == "azure":
+        return get_azure_sql_engine()
+
+    return get_sqlite_engine()
+
+
+def is_azure_sql_mode() -> bool:
+    """
+    Checks whether the API is running in Azure SQL mode.
+    """
+    return os.getenv("APP_ENV", "local").lower().strip() == "azure"
 
 
 def fetch_one(query: str) -> dict:
     try:
-        engine = get_engine()
+        engine = get_api_database_engine()
 
         with engine.begin() as connection:
             result_df = pd.read_sql(text(query), connection)
@@ -29,13 +60,19 @@ def fetch_one(query: str) -> dict:
 
 def fetch_all(query: str, limit: int | None = None) -> list[dict]:
     try:
-        engine = get_engine()
+        engine = get_api_database_engine()
 
-        if limit is not None:
-            query = f"{query} LIMIT {limit}"
-
+        # We avoid appending database-specific LIMIT syntax here because:
+        # - SQLite supports LIMIT
+        # - Azure SQL uses TOP/OFFSET instead of LIMIT
+        #
+        # For portfolio API workloads, reading the query result and then limiting
+        # in pandas keeps the same API code working in both modes.
         with engine.begin() as connection:
             result_df = pd.read_sql(text(query), connection)
+
+        if limit is not None:
+            result_df = result_df.head(limit)
 
         return result_df.to_dict(orient="records")
 
@@ -46,7 +83,7 @@ def fetch_all(query: str, limit: int | None = None) -> list[dict]:
 
 def check_database_connection() -> bool:
     try:
-        engine = get_engine()
+        engine = get_api_database_engine()
 
         with engine.begin() as connection:
             connection.execute(text("SELECT 1"))
@@ -60,14 +97,22 @@ def check_database_connection() -> bool:
 
 def check_database_object_exists(object_name: str) -> bool:
     try:
-        engine = get_engine()
+        engine = get_api_database_engine()
 
-        query = """
-        SELECT name
-        FROM sqlite_master
-        WHERE name = :object_name
-          AND type IN ('table', 'view')
-        """
+        if is_azure_sql_mode():
+            query = """
+            SELECT object_id
+            FROM sys.objects
+            WHERE name = :object_name
+              AND type IN ('U', 'V')
+            """
+        else:
+            query = """
+            SELECT name
+            FROM sqlite_master
+            WHERE name = :object_name
+              AND type IN ('table', 'view')
+            """
 
         with engine.begin() as connection:
             result_df = pd.read_sql(

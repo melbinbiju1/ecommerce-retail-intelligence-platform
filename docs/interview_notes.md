@@ -379,3 +379,26 @@ The CI pipeline installs dependencies, validates Python syntax, checks core impo
 Because the local SQLite database is a large generated artifact, it is not committed to GitHub. The CI pipeline is currently database-independent, while full database-backed tests are run locally. In a later cloud phase, CI can be expanded to run against Azure SQL Database or a smaller CI test database.
 
 This gives the project a professional CI foundation before adding full Azure continuous deployment.
+
+
+## Azure App Service Deployment Interview Notes
+
+### Simple Explanation
+
+I deployed the FastAPI backend as a Docker container on Azure App Service. The Docker image is stored in Azure Container Registry, and the App Service pulls the image using managed identity. The deployed API runs in Azure SQL mode, so it connects to Azure SQL Database instead of the local SQLite database.
+
+### Technical Explanation
+
+The application is packaged into a Docker image with the required Python dependencies and Microsoft ODBC Driver 18 for SQL Server. I pushed the image to Azure Container Registry and configured Azure App Service for Containers to run the image on port 8000. Runtime configuration is handled through App Service environment variables, including `APP_ENV=azure`, Azure SQL connection settings, and API keys. The App Service uses system-assigned managed identity with the `AcrPull` role to securely pull the container image from ACR.
+
+### Key Skills Demonstrated
+
+- Docker containerization
+- Azure Container Registry
+- Azure App Service for Containers
+- Managed identity
+- Azure SQL Database connectivity
+- FastAPI deployment
+- API authentication
+- Cloud runtime configuration
+- Deployment verification

@@ -1,4 +1,0 @@
-table_name,exists,row_count
-sim_inventory_policy,True,34448
-sim_stock_movements,True,129072
-sim_inventory_snapshot,True,129072

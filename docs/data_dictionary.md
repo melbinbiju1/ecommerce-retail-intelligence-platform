@@ -940,3 +940,72 @@ The report validates:
 | Sink dataset | `ds_sql_adf_stg_orders_raw` |
 | Source linked service | `ls_azure_blob_olist_raw` |
 | Sink linked service | `ls_azure_sql_retail` |
+
+
+## Azure App Deployment Outputs
+
+This section documents the deployment-related files and outputs for the Azure App Service phase.
+
+### Deployment Script Outputs
+
+| File | Description |
+|---|---|
+| `scripts/verify_azure_app_deployment.py` | Verifies that the deployed Azure App Service API endpoints are responding successfully |
+| `data/processed/azure_app_deployment_verification_report.csv` | CSV report showing endpoint checks, URLs, HTTP status codes, pass/fail status, and response previews |
+
+### Azure App Service Runtime Variables
+
+| Variable | Description |
+|---|---|
+| `APP_ENV` | Controls whether the API uses SQLite or Azure SQL Database |
+| `AZURE_SQL_SERVER` | Azure SQL Server hostname |
+| `AZURE_SQL_DATABASE` | Azure SQL Database name |
+| `AZURE_SQL_USERNAME` | Azure SQL login username |
+| `AZURE_SQL_PASSWORD` | Azure SQL login password |
+| `AZURE_SQL_DRIVER` | ODBC driver used for Azure SQL connectivity |
+| `ADMIN_API_KEY` | API key for admin-level access |
+| `ANALYST_API_KEY` | API key for analyst-level access |
+| `VIEWER_API_KEY` | API key for viewer-level access |
+| `WEBSITES_PORT` | Container port used by Azure App Service |
+| `AZURE_APP_BASE_URL` | Base URL used by local verification scripts to test the deployed API |
+
+### Azure App Verification Report Columns
+
+File:
+
+```text
+data/processed/azure_app_deployment_verification_report.csv
+```
+
+| Column | Description |
+|---|---|
+| `check_name` | Name of the endpoint check |
+| `url` | Full deployed API URL tested |
+| `status_code` | HTTP status code returned by the endpoint |
+| `passed` | Boolean flag showing whether the check passed |
+| `response_preview` | Short preview of the API response body |
+
+### API Serving Objects Required in Azure SQL
+
+The deployed API requires the following serving-layer objects in Azure SQL:
+
+| Object | Purpose |
+|---|---|
+| `vw_executive_summary` | Executive KPI summary |
+| `vw_monthly_sales` | Monthly sales performance |
+| `vw_product_performance` | Product category performance |
+| `vw_seller_performance` | Seller performance |
+| `vw_customer_state_performance` | Customer state performance |
+| `vw_operational_alert_summary` | Operational alert summary |
+| `vw_operational_alerts_by_type` | Alerts grouped by anomaly type |
+| `vw_operational_alerts_by_severity` | Alerts grouped by severity |
+| `vw_recent_operational_alerts` | Recent anomaly alert records |
+| `vw_high_risk_sellers` | Sellers with elevated operational risk |
+| `vw_high_risk_categories` | Product categories with elevated operational risk |
+| `vw_operational_risk_summary` | Overall operational risk summary |
+
+These objects are migrated to Azure SQL using:
+
+```powershell
+python scripts\migrate_api_serving_views_to_azure_sql.py
+```

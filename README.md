@@ -679,3 +679,93 @@ Detailed documentation is available in:
 ```text
 docs/azure_data_factory.md
 ```
+
+
+## Azure App Service Deployment
+
+The FastAPI backend is deployed to Azure App Service as a Docker container.
+
+The deployment flow is:
+
+```text
+Docker image
+    ↓
+Azure Container Registry
+    ↓
+Azure App Service for Containers
+    ↓
+Azure SQL Database
+```
+
+### Deployed API
+
+The deployed API is available at:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net
+```
+
+### Runtime Mode
+
+The API supports two runtime modes:
+
+| Mode | Setting | Database |
+|---|---|---|
+| Local | `APP_ENV=local` | SQLite |
+| Azure | `APP_ENV=azure` | Azure SQL Database |
+
+The deployed App Service uses:
+
+```text
+APP_ENV=azure
+```
+
+### Cloud Deployment Components
+
+| Component | Purpose |
+|---|---|
+| Docker | Packages the FastAPI backend |
+| Azure Container Registry | Stores the Docker image |
+| Azure App Service | Hosts the containerized API |
+| Azure SQL Database | Serves curated warehouse and API objects |
+| Managed Identity | Allows App Service to pull from ACR securely |
+
+### Deployment Verification
+
+Run:
+
+```powershell
+python scripts\verify_azure_app_deployment.py
+```
+
+The verification report is saved to:
+
+```text
+data/processed/azure_app_deployment_verification_report.csv
+```
+
+### Example API Test
+
+Public health endpoint:
+
+```text
+/health/
+```
+
+Protected endpoint test:
+
+```powershell
+$headers = @{
+    "X-API-Key" = "admin-demo-key"
+}
+
+Invoke-RestMethod `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/executive/summary" `
+  -Headers $headers
+```
+
+Full deployment documentation is available in:
+
+```text
+docs/azure_app_deployment.md
+```

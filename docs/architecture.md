@@ -942,3 +942,78 @@ dbo.adf_stg_orders_raw
 This demonstrates cloud-based orchestration without replacing the full local Python/dbt transformation pipeline yet.
 
 Future phases can extend this into metadata-driven ingestion and scheduled orchestration.
+
+
+## Azure App Service API Deployment Layer
+
+The platform includes a cloud-hosted FastAPI backend deployed on Azure App Service for Containers.
+
+This layer exposes curated business metrics, operational anomaly alerts, and AI-ready insight outputs through API endpoints.
+
+### Deployment Flow
+
+```text
+Local FastAPI source code
+        ↓
+Docker image
+        ↓
+Azure Container Registry
+        ↓
+Azure App Service
+        ↓
+Azure SQL Database
+```
+
+### Architecture Role
+
+| Component | Role |
+|---|---|
+| Docker | Packages the FastAPI backend and dependencies |
+| Azure Container Registry | Stores the deployable API image |
+| Azure App Service | Runs the API container and exposes HTTPS endpoints |
+| Azure SQL Database | Provides the deployed API data backend |
+| Managed Identity | Allows secure image pull from ACR |
+| Environment Variables | Configure runtime mode, SQL connection, and API keys |
+
+### Runtime Design
+
+The API uses an environment-driven database mode:
+
+```text
+APP_ENV=local → SQLite
+APP_ENV=azure → Azure SQL Database
+```
+
+This allows the same application code to run locally and in Azure.
+
+### Cloud API Flow
+
+```text
+User / Browser / API Client
+        ↓
+Azure App Service HTTPS Endpoint
+        ↓
+FastAPI Routes
+        ↓
+Authentication and RBAC
+        ↓
+Azure SQL Serving Tables
+        ↓
+JSON API Response
+```
+
+### Final Cloud Serving Architecture
+
+```text
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↓
+Azure App Service FastAPI Backend
+        ↓
+Business users / API clients / dashboard layer
+```
+
+The Azure App Service layer completes the application-serving part of the cloud architecture.
