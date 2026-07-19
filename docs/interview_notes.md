@@ -368,3 +368,14 @@ It demonstrates:
 * AI business insights
 * Cloud deployment planning
 * Testing, logging, monitoring, Docker, and CI/CD
+
+
+## GitHub Actions CI Pipeline
+
+I implemented a GitHub Actions CI pipeline to automatically validate the project when code is pushed to GitHub.
+
+The CI pipeline installs dependencies, validates Python syntax, checks core imports, verifies Docker setup, verifies CI documentation, confirms the large local SQLite database is not tracked, and builds the Docker image.
+
+Because the local SQLite database is a large generated artifact, it is not committed to GitHub. The CI pipeline is currently database-independent, while full database-backed tests are run locally. In a later cloud phase, CI can be expanded to run against Azure SQL Database or a smaller CI test database.
+
+This gives the project a professional CI foundation before adding full Azure continuous deployment.

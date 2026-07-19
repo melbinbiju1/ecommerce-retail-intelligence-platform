@@ -319,3 +319,124 @@ Additional documentation is available in:
 | `docs/architecture.md` | Architecture explanation |
 | `docs/data_governance.md` | Governance, quality, security, and CI notes |
 | `docs/data_dictionary.md` | Project files, tables, views, and technical artifacts |
+
+
+## Azure SQL Database Setup
+
+Azure SQL Database is used as the cloud serving database for curated warehouse, KPI, operational, anomaly, and event pipeline outputs.
+
+### Prerequisites
+
+Before running the Azure SQL scripts, make sure:
+
+- Azure SQL Server has been created
+- Azure SQL Database has been created
+- Your current client IP has been allowed in the Azure SQL firewall
+- The local `.env` file contains Azure SQL credentials
+- SQL Server ODBC Driver 18 is installed
+
+Check installed ODBC drivers:
+
+```powershell
+Get-OdbcDriver | Where-Object {$_.Name -like "*SQL Server*"} | Select-Object Name
+```
+
+Recommended driver:
+
+```text
+ODBC Driver 18 for SQL Server
+```
+
+### Environment Variables
+
+Add the following values to your local `.env` file:
+
+```text
+AZURE_SQL_SERVER=your-server-name.database.windows.net
+AZURE_SQL_DATABASE=sqldb-ecommerce-retail-intelligence
+AZURE_SQL_USERNAME=your_sql_admin_username
+AZURE_SQL_PASSWORD=your_sql_admin_password
+AZURE_SQL_DRIVER=ODBC Driver 18 for SQL Server
+```
+
+Do not commit the real `.env` file to GitHub.
+
+### Install Dependencies
+
+Make sure these packages are included in `requirements.txt`:
+
+```text
+sqlalchemy
+pyodbc
+python-dotenv
+```
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+### Test Azure SQL Connection
+
+Run:
+
+```powershell
+python scripts\test_azure_sql_connection.py
+```
+
+Expected result:
+
+```text
+Azure SQL Database connection successful.
+```
+
+The connection test report is saved to:
+
+```text
+data/processed/azure_sql_connection_test_report.csv
+```
+
+### Migrate Curated Data to Azure SQL
+
+Run:
+
+```powershell
+python scripts\migrate_curated_data_to_azure_sql.py
+```
+
+The migration script loads selected curated objects from the local SQLite database into Azure SQL.
+
+The migration report is saved to:
+
+```text
+data/processed/azure_sql_migration_report.csv
+```
+
+### Verify Azure SQL Setup
+
+Run:
+
+```powershell
+python scripts\verify_azure_sql_setup.py
+```
+
+Expected result:
+
+```text
+Azure SQL setup verification passed.
+```
+
+The verification report is saved to:
+
+```text
+data/processed/azure_sql_setup_verification_report.csv
+```
+
+### Azure SQL Documentation
+
+Detailed Azure SQL documentation is available in:
+
+```text
+docs/azure_sql_database.md
+```

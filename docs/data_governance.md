@@ -332,3 +332,156 @@ Continuous Deployment will be implemented later after:
 - Azure Monitor
 
 are completed.
+
+
+## Azure SQL Database Governance
+
+Azure SQL Database is used as the cloud serving database for curated analytical outputs.
+
+This layer introduces cloud database governance for structured serving data.
+
+### Data Governance Role
+
+Azure SQL stores curated outputs rather than raw files.
+
+Raw source files remain in Azure Blob Storage, while cleaned and modelled analytical tables are loaded into Azure SQL.
+
+This separation supports a clear data architecture:
+
+```text
+Raw data → Azure Blob Storage
+Curated serving data → Azure SQL Database
+```
+
+### Loaded Data Scope
+
+The Azure SQL migration focuses on curated, business-ready objects:
+
+| Data Area | Examples |
+|---|---|
+| Dimensions | Customer, product, seller, and date dimensions |
+| Facts | Sales, delivery, payment, and review facts |
+| Operational metrics | Daily, seller, and category operational metrics |
+| Anomaly detection | Operational anomaly rules and alerts |
+| Event pipeline | Event log and processed event records |
+
+Raw CSV files and the local SQLite database are not uploaded into Azure SQL directly as unmanaged raw artifacts.
+
+### Access and Security Governance
+
+Azure SQL credentials are stored only in the local `.env` file.
+
+The `.env` file is ignored by Git and must not be committed to GitHub.
+
+The safe placeholder variables are documented in `.env.example`.
+
+This phase uses SQL authentication for local development and portfolio demonstration.
+
+In a later phase, secrets will be managed using Azure Key Vault.
+
+### Firewall Governance
+
+Azure SQL firewall access is configured to allow the local development machine to connect.
+
+Firewall access should be limited to required client IP addresses.
+
+Broad public access should be avoided.
+
+### Migration Governance
+
+The migration script creates a structured report:
+
+```text
+data/processed/azure_sql_migration_report.csv
+```
+
+This report records:
+
+- Object name
+- Migration status
+- Loaded row count
+- Start time
+- Finish time
+- Error details, if any
+
+### Verification Governance
+
+The verification script creates:
+
+```text
+data/processed/azure_sql_setup_verification_report.csv
+```
+
+This report checks:
+
+- Required local files
+- Required environment variable documentation
+- Required Python dependencies
+- Expected Azure SQL tables
+- Loaded table row counts
+
+### Cost Governance
+
+The Azure SQL Database should use a low-cost or free-tier configuration where available.
+
+Free offer behavior should be configured to pause or stop usage when the monthly free limit is reached.
+
+This helps avoid unexpected charges during portfolio development.
+
+### Current Limitation
+
+The FastAPI backend still uses local SQLite at this stage.
+
+Azure SQL is currently used as the cloud serving database and migration target.
+
+A later phase can update the API configuration to use Azure SQL as a live backend database source.
+
+### Governance Outcome
+
+This phase adds cloud database governance by separating raw landing-zone storage from curated serving-layer storage.
+
+It also introduces controlled credentials, firewall configuration, migration reporting, and verification reporting.
+
+
+## Azure Data Factory Governance
+
+Azure Data Factory is used as the cloud orchestration layer between Azure Blob Storage and Azure SQL Database.
+
+### Governance Role
+
+ADF controls the movement of raw data from the cloud landing zone into a structured Azure SQL staging table.
+
+### Pipeline Governance
+
+The implemented pipeline copies one raw source file:
+
+```text
+raw/olist/olist_orders_dataset.csv
+```
+
+into:
+
+```text
+dbo.adf_stg_orders_raw
+```
+
+The sink table is truncated before each pipeline run to avoid duplicate records.
+
+### Separation of Concerns
+
+The ADF staging table is separate from the curated warehouse and operational tables.
+
+This ensures raw ingestion testing does not overwrite curated analytical outputs.
+
+### Current Scope
+
+This phase proves cloud orchestration with one representative raw file.
+
+Future improvements can include:
+
+- Parameterised datasets
+- Metadata-driven ingestion
+- Scheduled triggers
+- Multiple file ingestion
+- Azure Key Vault integration
+- Monitoring and alerting

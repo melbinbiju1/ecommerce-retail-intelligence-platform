@@ -832,3 +832,113 @@ In a later Azure phase, CI can be expanded to run against Azure SQL Database or 
 This phase implements Continuous Integration only.
 
 Continuous Deployment will be added later after the Azure hosting, database, secrets, and monitoring layers are completed.
+
+
+## Azure SQL Database Serving Layer
+
+Azure SQL Database is used as the cloud serving database for curated analytical outputs.
+
+This layer moves the project from a local-only SQLite setup toward a managed cloud database architecture.
+
+### Azure SQL Architecture Flow
+
+```text
+Azure Blob Storage
+        ↓
+Raw Olist CSV landing zone
+        ↓
+Python + dbt transformation pipeline
+        ↓
+Local SQLite curated warehouse
+        ↓
+Azure SQL migration script
+        ↓
+Azure SQL Database
+        ↓
+Future FastAPI / Power BI cloud serving
+```
+
+### Azure SQL Role
+
+Azure SQL Database stores curated serving-layer tables, including:
+
+- Dimension tables
+- Fact tables
+- Operational metric tables
+- Anomaly detection tables
+- Event pipeline tables
+
+### Loaded Object Groups
+
+| Group | Tables |
+|---|---|
+| Dimensions | `dim_date`, `dim_customer`, `dim_product`, `dim_seller` |
+| Facts | `fact_sales`, `fact_delivery`, `fact_payments`, `fact_reviews` |
+| Operational metrics | `ops_daily_metrics`, `ops_seller_metrics`, `ops_category_metrics` |
+| Anomaly detection | `ops_anomaly_rules`, `ops_anomaly_alerts` |
+| Event pipeline | `ops_event_log`, `ops_event_records` |
+
+### Current Local-to-Cloud Design
+
+At this stage, the local pipeline still builds the full analytical model in SQLite.
+
+A migration script then loads selected curated objects into Azure SQL Database.
+
+This design is intentional for the portfolio version because it allows the project to keep a working local development environment while adding a cloud serving database.
+
+### Future Cloud Design
+
+In later phases, the architecture can evolve into:
+
+```text
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↓
+FastAPI / Power BI
+```
+
+### Architecture Benefit
+
+Adding Azure SQL Database demonstrates that the project can publish curated analytical outputs to a managed cloud database.
+
+This prepares the backend and reporting layers for cloud deployment and production-style access patterns.
+
+
+## Azure Data Factory Orchestration Layer
+
+Azure Data Factory is used as the cloud orchestration layer.
+
+In this phase, ADF copies raw order data from Azure Blob Storage into Azure SQL Database.
+
+```text
+Azure Blob Storage
+        ↓
+ADF Copy Activity
+        ↓
+Azure SQL staging table
+```
+
+The implemented pipeline is:
+
+```text
+pl_copy_olist_orders_blob_to_sql
+```
+
+The pipeline reads:
+
+```text
+ecommerce-retail-data/raw/olist/olist_orders_dataset.csv
+```
+
+and writes to:
+
+```text
+dbo.adf_stg_orders_raw
+```
+
+This demonstrates cloud-based orchestration without replacing the full local Python/dbt transformation pipeline yet.
+
+Future phases can extend this into metadata-driven ingestion and scheduled orchestration.
