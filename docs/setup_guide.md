@@ -770,3 +770,186 @@ The report is saved to:
 ```text
 data/processed/key_vault_setup_verification_report.csv
 ```
+
+## Azure Monitoring Setup
+
+This section explains how monitoring was configured for the deployed FastAPI API.
+
+### Prerequisites
+
+Before configuring monitoring, complete:
+
+- Azure App Service deployment
+- Azure Key Vault setup
+- Successful deployed API test
+- Successful `/health/` endpoint response
+
+---
+
+### 1. Enable App Service Logs
+
+Go to:
+
+```text
+Azure Portal
+→ App Services
+→ app-ecommerce-retail-api-melbin
+→ Monitoring
+→ App Service logs
+```
+
+Configure:
+
+| Setting | Value |
+|---|---|
+| Application logging | File System |
+| Quota | 35 MB |
+| Retention period | Short-term retention |
+
+Save the configuration.
+
+---
+
+### 2. Verify Log Stream
+
+Go to:
+
+```text
+App Services
+→ app-ecommerce-retail-api-melbin
+→ Monitoring
+→ Log stream
+```
+
+Open the health endpoint in another browser tab:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+```
+
+Confirm that request or container activity appears in Log Stream.
+
+---
+
+### 3. Built-in Health Check Note
+
+The built-in App Service Health Check feature was skipped because the deployed app uses the Free App Service plan.
+
+The Azure Portal requires Basic B1 or higher for built-in Health Check.
+
+The project uses Application Insights availability testing instead.
+
+---
+
+### 4. Create Application Insights
+
+Create an Application Insights resource:
+
+| Field | Value |
+|---|---|
+| Resource group | `rg-ecommerce-retail-intelligence` |
+| Name | `appi-ecommerce-retail-api` |
+| Region | France Central |
+| Resource mode | Workspace-based |
+
+Use or create a Log Analytics workspace in the same subscription.
+
+---
+
+### 5. Connect App Service to Application Insights
+
+Go to:
+
+```text
+App Services
+→ app-ecommerce-retail-api-melbin
+→ Settings
+→ Application Insights
+```
+
+Choose:
+
+| Field | Value |
+|---|---|
+| Application Insights | Enable |
+| Link option | Select existing resource |
+| Resource | `appi-ecommerce-retail-api` |
+| Stack | Python |
+
+Apply the setting and restart the Web App.
+
+---
+
+### 6. Create Availability Test
+
+Go to:
+
+```text
+Application Insights
+→ appi-ecommerce-retail-api
+→ Investigate
+→ Availability
+→ Create Standard test
+```
+
+Configure:
+
+| Field | Value |
+|---|---|
+| Test name | `fastapi-health-check` |
+| URL | `https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/` |
+| HTTP method | GET |
+| Expected status code | 200 |
+| Frequency | 5 minutes |
+| Timeout | 120 seconds |
+| Test locations | 5 selected |
+| SSL certificate validity | Enabled |
+| Retries | Enabled |
+| Alerts | Enabled |
+
+Wait for the first test result.
+
+Expected result:
+
+```text
+Availability result: Successful
+```
+
+---
+
+### 7. Alert Rule
+
+An automatic alert rule is created for the availability test.
+
+The final rule monitors:
+
+| Field | Value |
+|---|---|
+| Signal | Availability |
+| Condition | Failed locations >= 2 |
+| Severity | 1 - Error |
+| Scope | `appi-ecommerce-retail-api` |
+
+A custom action group was not required for the final setup.
+
+---
+
+### 8. Run Monitoring Verification Script
+
+Run:
+
+```powershell
+python scripts\verify_azure_monitoring_setup.py
+```
+
+Expected result:
+
+```text
+Azure monitoring setup verification passed.
+```
+
+Output report:
+
+```text
+data/processed/azure_monitoring_setup_verification_report.csv
+```

@@ -1084,3 +1084,96 @@ The same FastAPI codebase supports both local and cloud operation:
 | Azure deployment | Azure SQL | Key Vault references |
 
 This allows the project to remain easy to develop locally while using stronger cloud security practices in Azure.
+
+## Azure Monitoring and Observability Layer
+
+The platform includes a monitoring layer for the deployed FastAPI API.
+
+This layer helps validate that the deployed API is reachable, observable, and monitored for availability failures.
+
+### Monitoring Architecture
+
+```text
+API Client / Browser
+        ↓
+Azure App Service FastAPI API
+        ↓
+App Service Logs and Log Stream
+
+Application Insights
+        ↓
+Availability Test against /health/
+        ↓
+Azure Monitor Alert Rule
+```
+
+### Monitoring Components
+
+| Component | Role |
+|---|---|
+| App Service Logs | Captures application/container logs |
+| Log Stream | Provides live log visibility |
+| Application Insights | Tracks availability and monitoring signals |
+| Availability Test | Calls the public `/health/` endpoint |
+| Alert Rule | Detects failed health checks across test locations |
+
+### Availability Monitoring Flow
+
+```text
+Application Insights
+        ↓
+Calls /health/ every 5 minutes
+        ↓
+Expects HTTP 200
+        ↓
+Records success/failure by region
+        ↓
+Triggers alert if multiple locations fail
+```
+
+### Health Check Design
+
+The API exposes a public health endpoint:
+
+```text
+/health/
+```
+
+This endpoint validates:
+
+- FastAPI service availability
+- Database connectivity status
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "E-Commerce Retail Intelligence API",
+  "database_connected": true
+}
+```
+
+### Free Tier Design Decision
+
+Built-in App Service Health Check was skipped because it requires a Basic B1 or higher App Service plan.
+
+To keep the portfolio project cost-controlled, Application Insights availability testing is used instead.
+
+### Updated Cloud Architecture
+
+```text
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↑
+Azure Key Vault
+        ↓
+Azure App Service FastAPI API
+        ↓
+Application Insights Monitoring
+        ↓
+Azure Monitor Availability Alert
+```

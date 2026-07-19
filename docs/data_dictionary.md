@@ -1063,3 +1063,51 @@ This section documents files and configuration related to Azure Key Vault secret
 | `WEBSITES_PORT` | Tells App Service which port the container listens on |
 | `AZURE_APP_BASE_URL` | Used locally by verification scripts to test the deployed API |
 | `AZURE_KEY_VAULT_NAME` | Documents the configured Azure Key Vault name |
+
+
+## Azure Monitoring Verification Outputs
+
+This section documents files and outputs related to Azure monitoring setup.
+
+### Monitoring Verification Script
+
+| File | Description |
+|---|---|
+| `scripts/verify_azure_monitoring_setup.py` | Verifies monitoring setup evidence and deployed API endpoint availability |
+
+### Monitoring Verification Report
+
+| File | Description |
+|---|---|
+| `data/processed/azure_monitoring_setup_verification_report.csv` | CSV report containing manual monitoring setup checks and automated deployed endpoint checks |
+
+### Report Columns
+
+| Column | Description |
+|---|---|
+| `check_name` | Name of the monitoring verification check |
+| `component` | Azure service or API component being checked |
+| `expected_configuration` | Expected setup or endpoint behavior |
+| `verification_method` | Manual or automated verification method |
+| `url` | Endpoint URL tested, if applicable |
+| `status_code` | HTTP status code returned by endpoint checks |
+| `passed` | Boolean pass/fail result |
+| `response_preview` | Short preview of the endpoint response |
+| `checked_at_utc` | UTC timestamp when the check was recorded |
+
+### Monitoring Resources
+
+| Resource | Purpose |
+|---|---|
+| `appi-ecommerce-retail-api` | Application Insights resource for the deployed API |
+| `fastapi-health-check` | Availability test for the deployed `/health/` endpoint |
+| Automatic availability alert rule | Alerts when multiple availability test locations fail |
+| App Service Log Stream | Provides live application/container log visibility |
+
+### Monitored Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `/health/` | Public API and database health check |
+| `/executive/summary` | Protected executive KPI endpoint used in verification |
+| `/operations/alert-summary` | Protected operations monitoring endpoint used in verification |

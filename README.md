@@ -830,3 +830,75 @@ Full documentation is available in:
 ```text
 docs/azure_key_vault.md
 ```
+
+ ## Azure Monitoring and Availability Checks
+
+The deployed FastAPI API is monitored using Azure App Service logs and Application Insights.
+
+### Monitoring Flow
+
+```text
+Azure App Service FastAPI API
+    ↓
+App Service Logs / Log Stream
+    ↓
+Application Insights Availability Test
+    ↓
+Azure Monitor Alert Rule
+```
+
+### Monitoring Components
+
+| Component | Purpose |
+|---|---|
+| App Service Logs | Captures application/container log output |
+| Log Stream | Allows live inspection of running container logs |
+| Application Insights | Monitors the deployed API |
+| Availability Test | Checks the `/health/` endpoint externally |
+| Azure Monitor Alert Rule | Alerts when multiple availability test locations fail |
+
+### Availability Test
+
+The deployed health endpoint is monitored with an Application Insights Standard availability test:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+```
+
+The test expects:
+
+```text
+HTTP 200
+```
+
+The availability test is named:
+
+```text
+fastapi-health-check
+```
+
+### Health Check Plan Note
+
+Built-in Azure App Service Health Check was intentionally skipped because the project uses the Free App Service plan, where that feature is not available.
+
+Instead, the project uses Application Insights availability testing for the `/health/` endpoint.
+
+### Monitoring Verification
+
+Run:
+
+```powershell
+python scripts\verify_azure_monitoring_setup.py
+```
+
+The monitoring verification report is saved to:
+
+```text
+data/processed/azure_monitoring_setup_verification_report.csv
+```
+
+Full monitoring documentation is available in:
+
+```text
+docs/azure_monitoring.md
+```

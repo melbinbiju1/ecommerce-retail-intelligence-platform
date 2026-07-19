@@ -724,3 +724,97 @@ Remaining future improvements:
 - Add Azure Monitor alerts.
 - Consider Entra ID authentication for production-grade API security.
 - Consider managed identity authentication to Azure SQL in a future advanced phase.
+
+
+## Monitoring and Operational Governance
+
+Azure monitoring is used to provide operational visibility for the deployed API.
+
+### Monitoring Controls
+
+| Control | Purpose |
+|---|---|
+| App Service logging | Captures application and container log activity |
+| Log Stream | Supports live troubleshooting |
+| Application Insights | Tracks API availability |
+| Availability test | Verifies `/health/` endpoint from external locations |
+| Alert rule | Detects availability failures |
+
+---
+
+### Availability Governance
+
+The deployed API is monitored through a Standard availability test.
+
+| Field | Value |
+|---|---|
+| Test name | `fastapi-health-check` |
+| Endpoint | `/health/` |
+| Expected status | HTTP 200 |
+| Frequency | 5 minutes |
+| Failure rule | Failed locations >= 2 |
+
+This provides basic evidence that the API is externally reachable and monitored.
+
+---
+
+### Cost Governance
+
+The project remains on the Free App Service plan to control cost.
+
+Because built-in App Service Health Check requires Basic B1 or higher, it was intentionally skipped.
+
+Application Insights availability testing was selected as the monitoring approach for this portfolio deployment.
+
+---
+
+### Logging Governance
+
+Logs are used for troubleshooting and operational validation.
+
+The project avoids logging sensitive values such as:
+
+- SQL passwords
+- API keys
+- Key Vault secret values
+- Connection strings
+
+Secrets remain stored in Azure Key Vault and are not written to logs or documentation.
+
+---
+
+### Verification Evidence
+
+Monitoring setup is verified through:
+
+```powershell
+python scripts\verify_azure_monitoring_setup.py
+```
+
+The verification report is saved to:
+
+```text
+data/processed/azure_monitoring_setup_verification_report.csv
+```
+
+This report documents both manual Azure monitoring setup checks and automated deployed endpoint checks.
+
+---
+
+### Current Monitoring Limitations
+
+Current limitations:
+
+- Built-in App Service Health Check is not enabled due to Free tier limitation.
+- Full distributed tracing is not deeply instrumented inside the FastAPI application.
+- Custom dashboards are not yet created.
+- Alert notification routing is minimal.
+- Production-grade incident response is not implemented.
+
+Future improvements:
+
+- Add custom Application Insights metrics.
+- Add structured logging dashboards.
+- Add Azure Monitor workbook.
+- Add alerts for HTTP 5xx errors and response latency.
+- Add versioned deployment monitoring after CI/CD deployment automation.

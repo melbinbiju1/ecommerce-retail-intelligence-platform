@@ -422,3 +422,24 @@ The Key Vault uses Azure RBAC. My developer account has the Key Vault Secrets Of
 - App Service Key Vault references
 - Secure runtime configuration
 - Cloud deployment hardening
+
+
+## Azure Monitoring Interview Notes
+
+### Simple Explanation
+
+I added monitoring for the deployed FastAPI API using Azure App Service logs and Application Insights. I enabled Log Stream for live troubleshooting and created an availability test that checks the `/health/` endpoint every 5 minutes. An alert rule monitors availability failures across multiple test locations.
+
+### Technical Explanation
+
+The API runs as a container on Azure App Service. I enabled file-system application logging and verified runtime logs through Log Stream. Since App Service built-in Health Check requires Basic B1 or higher, I kept the app on the Free plan and used Application Insights Standard availability testing instead. The availability test calls the public `/health/` endpoint and expects HTTP 200. Azure automatically created an alert rule that triggers when multiple availability test locations fail.
+
+### Skills Demonstrated
+
+- Azure App Service logging
+- Log Stream troubleshooting
+- Application Insights
+- Availability testing
+- Azure Monitor alerts
+- Cost-aware monitoring design
+- Cloud operations documentation
