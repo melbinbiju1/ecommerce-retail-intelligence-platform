@@ -110,6 +110,91 @@ Operational Metrics and Anomaly Detection
 Power BI Dashboard / FastAPI / AI Assistant
 ```
 
+## Final Technical Architecture
+
+This project is an end-to-end cloud data engineering and analytics engineering platform for e-commerce retail intelligence.
+
+The final implemented architecture includes:
+
+```text
+Olist Raw CSV Data
+        ↓
+Python Ingestion and Data Quality Validation
+        ↓
+SQLite Local Development Warehouse
+        ↓
+dbt Transformations, Tests, and Documentation
+        ↓
+Operational KPI and Anomaly Detection Layer
+        ↓
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↓
+FastAPI Backend with Authentication and RBAC
+        ↓
+Docker + Azure Container Registry
+        ↓
+Azure App Service
+        ↓
+Azure Key Vault
+        ↓
+Application Insights Monitoring
+```
+
+### Core Technical Layers
+
+| Layer | Technologies | Purpose |
+|---|---|---|
+| Data ingestion | Python, pandas, SQLite | Load raw e-commerce CSV data |
+| Data quality | Python, SQL | Validate source and transformed data |
+| Transformations | SQL, dbt | Build staging models, warehouse models, tests, and documentation |
+| Warehouse | SQLite, Azure SQL | Store curated facts, dimensions, KPIs, and operational outputs |
+| Operational intelligence | SQL, Python | Generate anomaly alerts and operational risk metrics |
+| API backend | FastAPI | Expose business metrics and insights through JSON endpoints |
+| Security | API keys, RBAC, Azure Key Vault | Protect API access and cloud secrets |
+| Deployment | Docker, ACR, Azure App Service | Deploy the API as a cloud-hosted container |
+| Monitoring | App Service Logs, Application Insights | Monitor API logs, health, and availability |
+
+### Final Technical Documentation
+
+| Document | Purpose |
+|---|---|
+| `docs/final_architecture.md` | Final end-to-end architecture summary |
+| `docs/technical_architecture.md` | Detailed technical design decisions, runtime modes, trade-offs, security, deployment, and monitoring |
+| `docs/system_flow.md` | Step-by-step flow of data, API requests, deployment, secrets, and monitoring |
+| `docs/architecture.md` | Detailed working architecture notes from the full project build |
+
+Recommended reading order:
+
+```text
+1. docs/final_architecture.md
+2. docs/system_flow.md
+3. docs/technical_architecture.md
+4. docs/architecture.md
+```
+
+## Documentation Index
+
+| Document | Description |
+|---|---|
+| `docs/setup_guide.md` | Full setup and verification guide |
+| `docs/architecture.md` | Detailed architecture notes |
+| `docs/final_architecture.md` | Final implemented architecture overview |
+| `docs/system_flow.md` | End-to-end system flow explanation |
+| `docs/technical_architecture.md` | Technical design and trade-off explanation |
+| `docs/data_dictionary.md` | Tables, reports, scripts, and artifact documentation |
+| `docs/data_governance.md` | Data quality, security, monitoring, and governance notes |
+| `docs/azure_blob_storage.md` | Azure Blob Storage setup |
+| `docs/azure_sql_database.md` | Azure SQL setup |
+| `docs/azure_data_factory.md` | Azure Data Factory setup |
+| `docs/azure_app_deployment.md` | Azure App Service deployment |
+| `docs/azure_key_vault.md` | Azure Key Vault setup |
+| `docs/azure_monitoring.md` | Azure monitoring and availability setup |
+| `docs/interview_notes.md` | Technical explanations and interview notes |
+
 ## Project Layers
 
 ### Raw Layer
@@ -902,3 +987,50 @@ Full monitoring documentation is available in:
 ```text
 docs/azure_monitoring.md
 ```
+
+## Final Technical Verification
+
+The project includes verification scripts for the major local and cloud layers.
+
+| Area | Command |
+|---|---|
+| Automated tests | `python scripts\run_tests.py` |
+| Docker setup | `python scripts\verify_docker_setup.py` |
+| Azure Blob Storage | `python scripts\verify_azure_blob_setup.py` |
+| Azure SQL Database | `python scripts\verify_azure_sql_setup.py` |
+| Azure Data Factory setup | `python scripts\verify_adf_setup.py` |
+| ADF pipeline output | `python scripts\verify_adf_pipeline_output.py` |
+| Azure App Service deployment | `python scripts\verify_azure_app_deployment.py` |
+| Azure Key Vault integration | `python scripts\verify_key_vault_setup.py` |
+| Azure Monitoring | `python scripts\verify_azure_monitoring_setup.py` |
+
+The final technical build is complete when all relevant verification scripts pass and GitHub Actions CI succeeds.
+
+---
+
+## Final Technical Outcome
+
+This project demonstrates a complete technical path from raw e-commerce data to a secured and monitored Azure-hosted analytics API.
+
+The platform includes:
+
+```text
+Data ingestion
+Data quality validation
+dbt transformations and tests
+Dimensional warehouse modelling
+Operational anomaly detection
+FastAPI backend
+Authentication and RBAC
+Automated testing
+Docker containerization
+GitHub Actions CI
+Azure Blob Storage
+Azure Data Factory
+Azure SQL Database
+Azure App Service deployment
+Azure Key Vault secret management
+Application Insights monitoring
+```
+
+This completes the technical build before the portfolio packaging and Power BI presentation phases.

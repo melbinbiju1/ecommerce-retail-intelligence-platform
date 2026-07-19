@@ -1111,3 +1111,143 @@ This section documents files and outputs related to Azure monitoring setup.
 | `/health/` | Public API and database health check |
 | `/executive/summary` | Protected executive KPI endpoint used in verification |
 | `/operations/alert-summary` | Protected operations monitoring endpoint used in verification |
+
+
+## Final Technical Documentation Artifacts
+
+This section documents the final technical documentation files created after the Azure deployment, Key Vault, and monitoring phases.
+
+These files explain the complete implemented architecture of the platform.
+
+### Final Architecture Documentation Files
+
+| File | Description |
+|---|---|
+| `docs/final_architecture.md` | Clean final end-to-end architecture summary of the implemented platform |
+| `docs/technical_architecture.md` | Detailed technical design decisions, runtime modes, trade-offs, security, deployment, monitoring, and verification architecture |
+| `docs/system_flow.md` | Step-by-step explanation of data flow, API request flow, deployment flow, secret flow, monitoring flow, and verification flow |
+| `docs/architecture.md` | Detailed working architecture document updated throughout the project |
+
+---
+
+## Final Platform Layers
+
+| Layer | Main Artifacts |
+|---|---|
+| Source data layer | Olist CSV files |
+| Local ingestion layer | Python ingestion scripts, SQLite raw tables |
+| Data quality layer | Data quality scripts and validation reports |
+| Staging layer | SQL staging tables, dbt staging models |
+| Warehouse layer | Dimension tables, fact tables, KPI views |
+| Operational intelligence layer | Operational metrics, anomaly rules, anomaly alerts, event records |
+| Power BI export layer | Dashboard-ready export files |
+| Azure Blob Storage layer | Raw files in `raw/olist/` |
+| Azure Data Factory layer | Pipeline, linked services, datasets, SQL staging table |
+| Azure SQL layer | Curated cloud tables and API serving objects |
+| FastAPI layer | API routes, authentication, RBAC, insight endpoints |
+| Docker layer | Dockerfile, `.dockerignore`, Docker image |
+| Azure Container Registry layer | Pushed API container image |
+| Azure App Service layer | Deployed FastAPI container |
+| Azure Key Vault layer | SQL credentials and API key secrets |
+| Azure Monitoring layer | App Service logs, Application Insights availability test, alert rule |
+
+---
+
+## Final Verification Reports
+
+The project produces verification reports that provide evidence for major platform layers.
+
+| Report File | Purpose |
+|---|---|
+| `data/processed/automated_test_run_summary.csv` | Summarizes automated test execution |
+| `data/processed/azure_blob_upload_report.csv` | Documents raw file upload results to Azure Blob Storage |
+| `data/processed/azure_sql_connection_test_report.csv` | Records Azure SQL connection test result |
+| `data/processed/azure_sql_setup_verification_report.csv` | Verifies Azure SQL table availability and row counts |
+| `data/processed/adf_pipeline_output_verification_report.csv` | Verifies ADF pipeline output in Azure SQL |
+| `data/processed/azure_app_deployment_verification_report.csv` | Verifies deployed Azure App Service API endpoints |
+| `data/processed/key_vault_setup_verification_report.csv` | Verifies deployed API works after Key Vault integration |
+| `data/processed/azure_monitoring_setup_verification_report.csv` | Verifies monitoring evidence and deployed endpoint availability |
+
+---
+
+## Final Technical Scripts Index
+
+This section summarizes important scripts used across the final technical build.
+
+| Script | Purpose |
+|---|---|
+| `scripts/run_tests.py` | Runs automated unit, API, RBAC, and integration tests |
+| `scripts/upload_raw_data_to_blob.py` | Uploads raw CSV files to Azure Blob Storage |
+| `scripts/verify_azure_blob_setup.py` | Verifies Azure Blob Storage setup |
+| `scripts/test_azure_sql_connection.py` | Tests Azure SQL Database connectivity |
+| `scripts/migrate_curated_data_to_azure_sql.py` | Migrates curated SQLite tables into Azure SQL |
+| `scripts/migrate_api_serving_views_to_azure_sql.py` | Migrates API serving objects to Azure SQL |
+| `scripts/verify_azure_sql_setup.py` | Verifies Azure SQL tables and row counts |
+| `scripts/create_adf_staging_tables.py` | Creates Azure SQL staging tables used by ADF |
+| `scripts/verify_adf_setup.py` | Verifies ADF-related files and documentation |
+| `scripts/verify_adf_pipeline_output.py` | Verifies copied ADF staging data in Azure SQL |
+| `scripts/verify_azure_app_deployment.py` | Verifies deployed Azure App Service API endpoints |
+| `scripts/verify_key_vault_setup.py` | Verifies Key Vault-based deployment still works |
+| `scripts/verify_azure_monitoring_setup.py` | Verifies monitoring setup evidence and endpoint availability |
+
+---
+
+## Final API Serving Objects
+
+The deployed API reads curated serving objects from Azure SQL when running in cloud mode.
+
+| Serving Object | Used By |
+|---|---|
+| `vw_executive_summary` | `/executive/summary` |
+| `vw_monthly_sales` | `/executive/monthly-sales` |
+| `vw_product_performance` | `/executive/top-products` |
+| `vw_seller_performance` | `/executive/top-sellers` |
+| `vw_customer_state_performance` | `/executive/customer-states` |
+| `vw_operational_alert_summary` | `/operations/alert-summary` |
+| `vw_operational_alerts_by_type` | `/operations/alerts-by-type` |
+| `vw_operational_alerts_by_severity` | `/operations/alerts-by-severity` |
+| `vw_recent_operational_alerts` | `/operations/recent-alerts` |
+| `vw_high_risk_sellers` | `/operations/high-risk-sellers` |
+| `vw_high_risk_categories` | `/operations/high-risk-categories` |
+| `vw_operational_risk_summary` | `/operations/risk-summary` |
+
+---
+
+## Final Environment Configuration Groups
+
+The project uses environment variables to separate configuration from source code.
+
+| Group | Examples |
+|---|---|
+| API runtime | `APP_ENV`, `WEBSITES_PORT` |
+| API security | `ADMIN_API_KEY`, `ANALYST_API_KEY`, `VIEWER_API_KEY` |
+| Azure Blob Storage | `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_BLOB_CONTAINER_NAME`, `AZURE_BLOB_RAW_PREFIX` |
+| Azure SQL Database | `AZURE_SQL_SERVER`, `AZURE_SQL_DATABASE`, `AZURE_SQL_USERNAME`, `AZURE_SQL_PASSWORD`, `AZURE_SQL_DRIVER` |
+| Azure App Service | `AZURE_APP_BASE_URL` |
+| Azure Key Vault | `AZURE_KEY_VAULT_NAME` |
+| Azure Monitoring | `AZURE_APPLICATION_INSIGHTS_NAME`, `AZURE_MONITOR_AVAILABILITY_TEST_NAME` |
+
+The real `.env` file is local-only and must not be committed to Git.
+
+Safe placeholder values are documented in `.env.example`.
+
+---
+
+## Final Technical Completion Evidence
+
+The project is technically complete when the following are true:
+
+```text
+Automated tests pass
+Docker verification passes
+GitHub Actions CI passes
+Azure Blob Storage verification passes
+Azure SQL verification passes
+ADF setup and output verification pass
+Azure App deployment verification passes
+Azure Key Vault verification passes
+Azure Monitoring verification passes
+Final architecture documentation exists
+```
+
+This evidence supports the final technical architecture before portfolio packaging and dashboard presentation.

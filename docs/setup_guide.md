@@ -12,6 +12,30 @@ The guide covers:
 - Docker execution
 - GitHub Actions CI-equivalent checks
 
+## Final Technical Documentation
+
+After completing the cloud deployment, security, and monitoring phases, the project includes final technical documentation to explain the complete system architecture.
+
+Use these documents to understand the final implemented platform:
+
+| Document | Purpose |
+|---|---|
+| `docs/final_architecture.md` | Final end-to-end architecture summary |
+| `docs/technical_architecture.md` | Detailed technical design decisions, runtime modes, trade-offs, security, deployment, and monitoring architecture |
+| `docs/system_flow.md` | Step-by-step system flow covering data, API, deployment, secret management, and monitoring |
+| `docs/architecture.md` | Detailed working architecture document updated throughout the project |
+
+Recommended reading order:
+
+```text
+1. docs/final_architecture.md
+2. docs/system_flow.md
+3. docs/technical_architecture.md
+4. docs/architecture.md
+```
+
+These documents explain how the platform moves from raw Olist CSV files to a secured and monitored Azure-hosted FastAPI API.
+
 ## Project Prerequisites
 
 Install the following tools before running the project:
@@ -953,3 +977,133 @@ Output report:
 ```text
 data/processed/azure_monitoring_setup_verification_report.csv
 ```
+
+## Final Technical Verification Checklist
+
+Before moving to portfolio packaging, confirm that the technical platform is complete.
+
+### Local development checks
+
+```powershell
+python scripts\run_tests.py
+```
+
+Expected result:
+
+```text
+Automated tests passed
+```
+
+### Docker check
+
+```powershell
+python scripts\verify_docker_setup.py
+```
+
+Expected result:
+
+```text
+Docker setup verification passed
+```
+
+### Azure Blob Storage check
+
+```powershell
+python scripts\verify_azure_blob_setup.py
+```
+
+Expected result:
+
+```text
+Azure Blob Storage setup verification passed
+```
+
+### Azure SQL check
+
+```powershell
+python scripts\verify_azure_sql_setup.py
+```
+
+Expected result:
+
+```text
+Azure SQL setup verification passed
+```
+
+### Azure Data Factory checks
+
+```powershell
+python scripts\verify_adf_setup.py
+python scripts\verify_adf_pipeline_output.py
+```
+
+Expected result:
+
+```text
+ADF setup verification passed
+ADF pipeline output verification passed
+```
+
+### Azure App Service deployment check
+
+```powershell
+python scripts\verify_azure_app_deployment.py
+```
+
+Expected result:
+
+```text
+Azure App deployment verification passed
+```
+
+### Azure Key Vault check
+
+```powershell
+python scripts\verify_key_vault_setup.py
+```
+
+Expected result:
+
+```text
+Key Vault setup verification passed
+```
+
+### Azure Monitoring check
+
+```powershell
+python scripts\verify_azure_monitoring_setup.py
+```
+
+Expected result:
+
+```text
+Azure monitoring setup verification passed
+```
+
+---
+
+## Final Technical Completion Criteria
+
+The project is technically complete when the following are done:
+
+```text
+Raw data ingestion completed
+Data quality validation completed
+Staging and warehouse models completed
+dbt tests and documentation completed
+Operational anomaly detection completed
+API backend completed
+Authentication and RBAC completed
+Automated tests completed
+Docker setup completed
+GitHub Actions CI completed
+Azure Blob Storage completed
+Azure SQL Database completed
+Azure Data Factory completed
+Azure App Service deployment completed
+Azure Key Vault integration completed
+Azure Monitoring completed
+Final architecture documentation completed
+```
+
+After this checklist is complete, the project can move to portfolio packaging and recruiter-facing presentation.

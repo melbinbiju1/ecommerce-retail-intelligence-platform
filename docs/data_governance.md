@@ -818,3 +818,163 @@ Future improvements:
 - Add Azure Monitor workbook.
 - Add alerts for HTTP 5xx errors and response latency.
 - Add versioned deployment monitoring after CI/CD deployment automation.
+
+
+## Final Technical Governance Summary
+
+The final platform includes governance controls across data quality, security, deployment, monitoring, and documentation.
+
+This governance layer helps show that the project is not only a data pipeline, but a controlled cloud data platform.
+
+---
+
+## Governance Across the Final Architecture
+
+| Area | Governance Control | Purpose |
+|---|---|---|
+| Raw data | Raw files preserved separately | Keeps original source data traceable |
+| Data quality | Validation scripts and reports | Makes data issues visible before analytics |
+| Transformations | dbt models and tests | Provides structured and testable analytics engineering logic |
+| Warehouse | Facts, dimensions, and curated views | Separates raw data from business-ready outputs |
+| Operational intelligence | Anomaly rules and alert tables | Converts operational issues into structured outputs |
+| API access | API key authentication and RBAC | Restricts access by user role |
+| Secret management | Azure Key Vault | Keeps sensitive values out of source code and plain settings |
+| Container deployment | Docker and ACR | Provides repeatable API deployment |
+| Cloud hosting | Azure App Service | Hosts the secured FastAPI API |
+| Monitoring | App Service Logs and Application Insights | Provides availability and troubleshooting visibility |
+| Verification | Scripts and CSV reports | Creates evidence that each layer works |
+| Documentation | Architecture and setup docs | Makes the system explainable and auditable |
+
+---
+
+## Data Governance Flow
+
+```text
+Raw source files
+    ↓
+Raw SQLite tables
+    ↓
+Data quality checks
+    ↓
+Staging models
+    ↓
+Warehouse facts and dimensions
+    ↓
+KPI and anomaly outputs
+    ↓
+API serving layer
+```
+
+This flow ensures that business users and API consumers do not work directly from raw data.
+
+Instead, they consume curated and documented outputs.
+
+---
+
+## Security Governance Flow
+
+```text
+Secrets
+    ↓
+Azure Key Vault
+    ↓
+App Service Key Vault references
+    ↓
+Environment variables
+    ↓
+FastAPI runtime
+```
+
+Security controls include:
+
+- `.env` excluded from Git
+- No secrets stored in Docker image
+- API keys stored in Key Vault for cloud deployment
+- SQL credentials stored in Key Vault
+- App Service managed identity used for Key Vault access
+- App Service managed identity used for ACR image pull
+- Protected API routes require `X-API-Key`
+- RBAC limits endpoint access by role
+
+---
+
+## Monitoring Governance Flow
+
+```text
+Azure App Service
+    ↓
+Application logs and Log Stream
+
+Application Insights
+    ↓
+Availability test on /health/
+    ↓
+Automatic alert rule
+```
+
+Monitoring controls include:
+
+- App Service logging enabled
+- Log Stream verified
+- Application Insights resource created
+- Availability test configured for `/health/`
+- Automatic alert rule created for failed locations
+- Monitoring verification report generated
+
+Built-in App Service Health Check was skipped intentionally because the project uses the Free App Service plan. Application Insights availability testing is used instead.
+
+---
+
+## Verification Governance
+
+Every major platform layer has a verification step.
+
+| Layer | Verification Evidence |
+|---|---|
+| Automated tests | `data/processed/automated_test_run_summary.csv` |
+| Docker | `scripts/verify_docker_setup.py` |
+| Azure Blob Storage | `data/processed/azure_blob_upload_report.csv` and Blob verification report |
+| Azure SQL Database | `data/processed/azure_sql_setup_verification_report.csv` |
+| Azure Data Factory | `data/processed/adf_pipeline_output_verification_report.csv` |
+| Azure App Service | `data/processed/azure_app_deployment_verification_report.csv` |
+| Azure Key Vault | `data/processed/key_vault_setup_verification_report.csv` |
+| Azure Monitoring | `data/processed/azure_monitoring_setup_verification_report.csv` |
+
+This creates a repeatable evidence trail for the platform.
+
+---
+
+## Final Documentation Governance
+
+The final technical documentation is split by purpose.
+
+| Document | Governance Purpose |
+|---|---|
+| `docs/final_architecture.md` | Provides final architecture summary |
+| `docs/technical_architecture.md` | Documents technical decisions and trade-offs |
+| `docs/system_flow.md` | Explains end-to-end data, API, deployment, security, and monitoring flow |
+| `docs/architecture.md` | Preserves detailed phase-by-phase architecture notes |
+| `docs/setup_guide.md` | Explains how to configure and verify the system |
+| `docs/data_dictionary.md` | Documents tables, outputs, reports, and technical artifacts |
+
+This structure makes the project easier to review, audit, and explain in interviews.
+
+---
+
+## Final Governance Outcome
+
+At the end of the technical build, the project includes governance across:
+
+```text
+Data quality
+Transformation testing
+Warehouse modelling
+API access control
+Secret management
+Cloud deployment
+Monitoring
+Verification evidence
+Documentation
+```
+
+This improves the project from a simple analytics build into a more complete cloud data engineering platform.

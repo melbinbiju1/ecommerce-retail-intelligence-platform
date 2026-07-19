@@ -443,3 +443,210 @@ The API runs as a container on Azure App Service. I enabled file-system applicat
 - Azure Monitor alerts
 - Cost-aware monitoring design
 - Cloud operations documentation
+
+
+## Final Technical Architecture Interview Notes
+
+### 1. Simple Project Explanation
+
+```text
+I built an end-to-end cloud data engineering and analytics engineering platform for e-commerce retail intelligence. The project takes raw Olist e-commerce data, validates it, builds warehouse models, detects operational anomalies, exposes insights through a secured FastAPI backend, deploys the API to Azure using Docker and App Service, secures secrets with Key Vault, and monitors availability with Application Insights.
+```
+
+---
+
+### 2. Technical Project Explanation
+
+```text
+The project starts with raw Olist CSV files, which are ingested into a local SQLite warehouse using Python. I run data quality checks, build staging and warehouse models, and use dbt for structured transformations, testing, and documentation. The warehouse includes facts, dimensions, KPI views, and operational anomaly detection outputs.
+
+For the cloud layer, I uploaded raw files to Azure Blob Storage, used Azure Data Factory to copy raw order data into Azure SQL staging, migrated curated tables and API serving objects to Azure SQL Database, and deployed a FastAPI backend as a Docker container on Azure App Service.
+
+The deployed API connects to Azure SQL in cloud mode, uses API key authentication and RBAC, stores secrets in Azure Key Vault through App Service references, and is monitored with Application Insights availability testing on the /health/ endpoint.
+```
+
+---
+
+### 3. Final Architecture Explanation
+
+```text
+The final architecture has two main tracks: the data engineering track and the application/cloud track.
+
+The data engineering track handles raw ingestion, data quality validation, dbt transformations, warehouse modelling, KPI outputs, and operational anomaly detection.
+
+The application/cloud track handles FastAPI serving, Docker containerization, Azure Container Registry, Azure App Service deployment, Azure Key Vault secret management, and Application Insights monitoring.
+```
+
+---
+
+### 4. End-to-End Flow Explanation
+
+```text
+Raw Olist CSV files are first loaded into SQLite using Python. Then data quality checks validate the raw data. Cleaned staging models are transformed into dimensional warehouse tables such as dim_customer, dim_product, dim_seller, and fact_sales. Operational KPI and anomaly detection tables are built on top of the warehouse.
+
+For the Azure cloud layer, raw CSV files are uploaded to Azure Blob Storage. Azure Data Factory copies raw order data into Azure SQL staging. Curated warehouse and serving objects are migrated into Azure SQL. The FastAPI application reads from Azure SQL when APP_ENV=azure and exposes the data through secured endpoints. The API is deployed as a Docker container to Azure App Service and monitored through Application Insights.
+```
+
+---
+
+### 5. Why I Used SQLite Locally
+
+```text
+I used SQLite locally because it keeps the development environment simple, reproducible, and low-cost. It allowed me to focus on the data engineering logic, testing, warehouse modelling, and API development before moving the serving layer to Azure SQL.
+```
+
+---
+
+### 6. Why I Used Azure SQL
+
+```text
+Azure SQL is used as the cloud serving database for the deployed API. It allows the FastAPI app running on Azure App Service to query curated warehouse tables and operational outputs from a cloud-hosted relational database instead of relying on a local SQLite file.
+```
+
+---
+
+### 7. Why I Used Azure Blob Storage
+
+```text
+Azure Blob Storage acts as the cloud raw data landing zone. It stores the Olist CSV files in a private container and provides the source location for the Azure Data Factory pipeline.
+```
+
+---
+
+### 8. Why I Used Azure Data Factory
+
+```text
+I used Azure Data Factory to demonstrate cloud orchestration. In the current implementation, ADF copies the raw orders CSV file from Azure Blob Storage into an Azure SQL staging table. This shows how raw cloud data can be moved into a cloud database using an Azure-native pipeline.
+```
+
+---
+
+### 9. Why I Used FastAPI
+
+```text
+FastAPI is lightweight, easy to test, and suitable for exposing analytical data as JSON endpoints. It allowed me to serve executive KPIs, operational anomaly metrics, and AI-ready insight summaries from the curated data layer.
+```
+
+---
+
+### 10. Why I Used Docker
+
+```text
+Docker packages the FastAPI application with its dependencies so it can run consistently outside my local machine. The deployed image includes the Python app, FastAPI dependencies, and Azure SQL ODBC dependencies required for cloud database connectivity.
+```
+
+---
+
+### 11. Why I Used Azure App Service
+
+```text
+Azure App Service provides managed container hosting without needing Kubernetes. It allowed me to deploy the FastAPI Docker image as a public HTTPS API while keeping the infrastructure simple and suitable for a first cloud data engineering portfolio project.
+```
+
+---
+
+### 12. Why I Used Azure Key Vault
+
+```text
+Azure Key Vault stores sensitive values such as SQL credentials and API keys. App Service reads these values through Key Vault references, which prevents secrets from being stored directly in source code, Docker images, or plain app settings.
+```
+
+---
+
+### 13. Why I Used Application Insights
+
+```text
+Application Insights provides monitoring for the deployed API. I used a Standard availability test to check the /health/ endpoint every 5 minutes and configured an automatic alert rule for availability failures. This proves the API is not only deployed, but also monitored.
+```
+
+---
+
+### 14. Why I Used API Key Authentication and RBAC
+
+```text
+I used API keys and role-based access control to protect the API endpoints. Admin, Analyst, and Viewer roles have different access levels, which demonstrates a practical security layer without making the portfolio project overly complex.
+```
+
+---
+
+### 15. What Makes This More Than a Dashboard Project
+
+```text
+This project is more than a dashboard because it includes data ingestion, validation, warehouse modelling, dbt transformations, anomaly detection, API development, authentication, Docker deployment, Azure cloud services, Key Vault secret management, monitoring, and verification scripts. Power BI is treated as the final presentation layer, not the entire project.
+```
+
+---
+
+### 16. Operational Anomaly Detection Explanation
+
+```text
+The anomaly detection layer identifies operational risk patterns such as late delivery risk, seller risk, category risk, review quality issues, and severity-based alert patterns. These outputs are stored in operational metrics and alert tables and exposed through the operations API endpoints.
+```
+
+---
+
+### 17. Security Explanation
+
+```text
+The project separates configuration from code using environment variables. Local secrets are stored in a .env file that is ignored by Git. In Azure, sensitive values are stored in Key Vault and exposed to App Service through Key Vault references. The API uses X-API-Key authentication and RBAC to restrict endpoint access.
+```
+
+---
+
+### 18. Monitoring Explanation
+
+```text
+The deployed API is monitored using Azure App Service logs, Log Stream, and Application Insights. Since built-in App Service Health Check requires a paid tier, I used Application Insights availability testing on the /health/ endpoint while keeping the App Service on the Free plan.
+```
+
+---
+
+### 19. Testing and Verification Explanation
+
+```text
+The project includes automated tests for API routes, RBAC behavior, database utilities, and pipeline outputs. It also includes verification scripts for Docker, Azure Blob Storage, Azure SQL, Azure Data Factory, Azure App Service, Azure Key Vault, and Azure Monitoring. Each verification script produces evidence that the corresponding layer works.
+```
+
+---
+
+### 20. CI Explanation
+
+```text
+GitHub Actions validates the repository on every push. It checks that the database file is not tracked, installs dependencies, compiles Python files, validates imports, runs setup verification scripts, and builds the Docker image. The CI workflow is database-independent so it can run reliably on GitHub.
+```
+
+---
+
+### 21. Main Technical Trade-Offs
+
+```text
+I intentionally kept the architecture professional but not overcomplicated. I used SQLite locally instead of a heavy local database, Azure App Service instead of Kubernetes, API keys instead of OAuth, and a focused Azure Data Factory pipeline instead of trying to cloud-orchestrate every local transformation. These choices kept the project realistic for a first cloud data engineering portfolio while still demonstrating end-to-end engineering skills.
+```
+
+---
+
+### 22. Final 60-Second Interview Pitch
+
+```text
+I built an end-to-end e-commerce retail intelligence platform using Python, SQL, dbt, FastAPI, Docker, and Azure. The project ingests raw Olist e-commerce data, validates data quality, builds a dimensional warehouse, creates operational anomaly detection outputs, and exposes business metrics through a secured API.
+
+For the cloud layer, I uploaded raw data to Azure Blob Storage, used Azure Data Factory for a copy pipeline, migrated curated outputs to Azure SQL, deployed the API as a Docker container on Azure App Service, secured secrets with Azure Key Vault, and monitored the /health/ endpoint with Application Insights availability testing.
+
+The project demonstrates data engineering, analytics engineering, API development, cloud deployment, security, monitoring, and verification practices in one complete platform.
+```
+
+---
+
+### 23. Final 30-Second Interview Pitch
+
+```text
+This is an end-to-end cloud data engineering project for e-commerce retail intelligence. It includes raw data ingestion, data quality checks, dbt transformations, dimensional modelling, operational anomaly detection, a secured FastAPI backend, Docker deployment to Azure App Service, Azure SQL serving, Key Vault secret management, and Application Insights monitoring.
+```
+
+---
+
+### 24. Final 10-Second Summary
+
+```text
+I built a monitored Azure-hosted retail intelligence API from raw e-commerce data using Python, SQL, dbt, FastAPI, Docker, Azure SQL, Key Vault, and Application Insights.
+```

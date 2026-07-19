@@ -25,7 +25,23 @@ The platform follows a layered architecture:
 11. AI business insights assistant
 12. Azure deployment
 
----
+## Architecture Documentation Index
+
+The project contains multiple architecture documents, each with a different purpose.
+
+| Document | Purpose |
+|---|---|
+| `docs/final_architecture.md` | Clean final end-to-end architecture summary of the implemented platform |
+| `docs/technical_architecture.md` | Detailed technical design decisions, runtime modes, trade-offs, security, deployment, and monitoring architecture |
+| `docs/system_flow.md` | Step-by-step explanation of data flow, API request flow, deployment flow, secret flow, and monitoring flow |
+
+Use this file, `docs/architecture.md`, as the detailed working architecture document created throughout the project.
+
+For a polished final overview, start with:
+
+```text
+docs/final_architecture.md
+```
 
 ## 1. High-Level Architecture
 
@@ -1177,3 +1193,119 @@ Application Insights Monitoring
         ↓
 Azure Monitor Availability Alert
 ```
+
+ ## Final Implemented Architecture Summary
+
+The final implemented platform combines local data engineering, analytics engineering, cloud deployment, security, and monitoring.
+
+```text
+Olist CSV Data
+        ↓
+Python Ingestion
+        ↓
+SQLite Raw Tables
+        ↓
+Data Quality Validation
+        ↓
+Staging and Warehouse Models
+        ↓
+dbt Transformations and Tests
+        ↓
+Operational KPI and Anomaly Detection Layer
+        ↓
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↓
+FastAPI Backend with Authentication and RBAC
+        ↓
+Docker Image
+        ↓
+Azure Container Registry
+        ↓
+Azure App Service
+        ↓
+Azure Key Vault
+        ↓
+Application Insights Monitoring
+```
+
+### Final Architecture Layers
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| Source data | Olist CSV files | Raw e-commerce data source |
+| Local ingestion | Python, pandas, SQLite | Load raw data into local analytical database |
+| Data quality | Python, SQL | Validate completeness, duplicates, nulls, dates, and relationships |
+| Transformation | SQL, dbt | Build staging, warehouse, and analytical models |
+| Warehouse | SQLite locally, Azure SQL in cloud | Store curated dimensions, facts, KPIs, and operational outputs |
+| Operational intelligence | SQL, Python | Generate operational metrics and anomaly alerts |
+| API | FastAPI | Serve curated metrics and insights as JSON |
+| Security | API keys, RBAC, Azure Key Vault | Protect endpoints and secrets |
+| Containerization | Docker | Package the API for deployment |
+| Image registry | Azure Container Registry | Store deployable API image |
+| Hosting | Azure App Service | Run the FastAPI container in Azure |
+| Monitoring | App Service Logs, Application Insights | Track logs, health, and availability |
+
+### Final Cloud Architecture
+
+```text
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↑
+Azure Key Vault
+        ↓
+Azure App Service FastAPI API
+        ↓
+Application Insights Availability Test
+        ↓
+Azure Monitor Alert Rule
+```
+
+### Final Local Development Architecture
+
+```text
+Raw Olist CSV files
+        ↓
+Python ingestion scripts
+        ↓
+SQLite database
+        ↓
+dbt transformations and tests
+        ↓
+Operational anomaly detection
+        ↓
+FastAPI local API
+        ↓
+Automated tests
+```
+
+### Final Design Decisions
+
+| Decision | Reason |
+|---|---|
+| SQLite for local development | Keeps local development simple, reproducible, and low-cost |
+| Azure SQL for cloud serving | Allows the deployed API to query cloud-hosted curated data |
+| Azure Blob for raw files | Provides a cloud raw data landing zone |
+| Azure Data Factory for orchestration | Demonstrates Azure-native data movement |
+| FastAPI for serving | Lightweight API layer for analytical outputs |
+| Docker for deployment | Makes the API portable and cloud deployable |
+| Azure App Service for hosting | Provides managed container hosting without Kubernetes complexity |
+| Azure Key Vault for secrets | Keeps SQL credentials and API keys out of source code and plain app settings |
+| Application Insights for monitoring | Provides external availability testing and alerting |
+| Power BI deferred to final phase | Keeps dashboarding as the presentation layer after engineering completion |
+
+### Final Technical Documentation
+
+For cleaner final documentation, use:
+
+| Document | Description |
+|---|---|
+| `docs/final_architecture.md` | Final architecture summary |
+| `docs/technical_architecture.md` | Technical design and engineering decisions |
+| `docs/system_flow.md` | Data, API, deployment, security, and monitoring flows |
