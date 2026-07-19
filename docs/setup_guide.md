@@ -599,3 +599,174 @@ The report is saved to:
 ```text
 data/processed/azure_app_deployment_verification_report.csv
 ```
+
+
+## Azure Key Vault Setup
+
+This section explains how Azure Key Vault is used to manage sensitive App Service runtime values.
+
+### Prerequisites
+
+Before configuring Key Vault, complete:
+
+- Azure SQL Database setup
+- Azure App Service deployment
+- App Service managed identity setup
+- Successful deployed API test
+
+---
+
+### 1. Create Azure Key Vault
+
+Create a Key Vault with the following settings:
+
+| Field | Value |
+|---|---|
+| Resource group | `rg-ecommerce-retail-intelligence` |
+| Key vault name | `kvretailmelbin` |
+| Region | `France Central` |
+| Pricing tier | `Standard` |
+| Permission model | Azure role-based access control |
+| Soft-delete | Enabled |
+| Purge protection | Disabled for portfolio flexibility |
+
+---
+
+### 2. Give Developer Secret Management Access
+
+Because the vault uses Azure RBAC, the developer account needs permission to create and manage secrets.
+
+Assign this role to the developer Azure user:
+
+| Field | Value |
+|---|---|
+| Scope | Key Vault |
+| Role | `Key Vault Secrets Officer` |
+| Assign access to | User, group, or service principal |
+| Member | Developer Azure account |
+
+---
+
+### 3. Add Secrets
+
+Create these secrets in Key Vault:
+
+| Secret name | Purpose |
+|---|---|
+| `azure-sql-server` | Azure SQL Server hostname |
+| `azure-sql-database` | Azure SQL Database name |
+| `azure-sql-username` | Azure SQL username |
+| `azure-sql-password` | Azure SQL password |
+| `admin-api-key` | Admin API key |
+| `analyst-api-key` | Analyst API key |
+| `viewer-api-key` | Viewer API key |
+
+For each secret:
+
+| Field | Value |
+|---|---|
+| Upload options | Manual |
+| Content type | Blank |
+| Activation date | Blank |
+| Expiration date | Blank |
+| Enabled | Yes |
+
+---
+
+### 4. Give App Service Read Access
+
+Assign this role to the App Service managed identity:
+
+| Field | Value |
+|---|---|
+| Scope | Key Vault |
+| Role | `Key Vault Secrets User` |
+| Assign access to | Managed identity |
+| Managed identity type | App Service |
+| Selected identity | `app-ecommerce-retail-api-melbin` |
+
+This allows App Service to read secret values from Key Vault.
+
+---
+
+### 5. Configure App Service Key Vault References
+
+In App Service environment variables, replace sensitive values with Key Vault references.
+
+Go to:
+
+```text
+App Services
+→ app-ecommerce-retail-api-melbin
+→ Settings
+→ Environment variables
+→ App settings
+```
+
+Use these references:
+
+| App setting | Value |
+|---|---|
+| `AZURE_SQL_SERVER` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-server)` |
+| `AZURE_SQL_DATABASE` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-database)` |
+| `AZURE_SQL_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-username)` |
+| `AZURE_SQL_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-password)` |
+| `ADMIN_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=admin-api-key)` |
+| `ANALYST_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=analyst-api-key)` |
+| `VIEWER_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=viewer-api-key)` |
+
+Keep these non-secret settings as plain values:
+
+| App setting | Value |
+|---|---|
+| `APP_ENV` | `azure` |
+| `AZURE_SQL_DRIVER` | `ODBC Driver 18 for SQL Server` |
+| `WEBSITES_PORT` | `8000` |
+
+---
+
+### 6. Restart and Test App Service
+
+Restart the deployed API:
+
+```text
+App Service → Overview → Restart
+```
+
+Test the health endpoint:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+```
+
+Expected result:
+
+```json
+{
+  "status": "ok",
+  "service": "E-Commerce Retail Intelligence API",
+  "database_connected": true
+}
+```
+
+---
+
+### 7. Run Key Vault Verification Script
+
+Run:
+
+```powershell
+python scripts\verify_key_vault_setup.py
+```
+
+Expected result:
+
+```text
+Key Vault setup verification passed.
+```
+
+The report is saved to:
+
+```text
+data/processed/key_vault_setup_verification_report.csv
+```

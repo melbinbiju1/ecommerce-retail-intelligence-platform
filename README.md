@@ -769,3 +769,64 @@ Full deployment documentation is available in:
 ```text
 docs/azure_app_deployment.md
 ```
+
+
+## Azure Key Vault Secret Management
+
+The deployed FastAPI API uses Azure Key Vault for secret management.
+
+Sensitive runtime values are stored in Azure Key Vault instead of being stored directly in App Service configuration.
+
+### Secret Management Flow
+
+```text
+Azure Key Vault
+    ↓
+App Service Key Vault references
+    ↓
+FastAPI environment variables
+    ↓
+Azure SQL Database and protected API routes
+```
+
+### Secrets Managed in Key Vault
+
+| Secret | Purpose |
+|---|---|
+| Azure SQL server | Database hostname |
+| Azure SQL database | Database name |
+| Azure SQL username | SQL login username |
+| Azure SQL password | SQL login password |
+| Admin API key | Admin access to protected endpoints |
+| Analyst API key | Analyst access to protected endpoints |
+| Viewer API key | Viewer access to protected endpoints |
+
+### Managed Identity
+
+The Azure App Service uses system-assigned managed identity to access Key Vault.
+
+| Identity | Role |
+|---|---|
+| App Service managed identity | `Key Vault Secrets User` |
+
+This allows the deployed container to securely read secrets without storing credentials in source code.
+
+### Key Vault Verification
+
+Run:
+
+```powershell
+python scripts\verify_key_vault_setup.py
+```
+
+The verification report is saved to:
+
+```text
+data/processed/key_vault_setup_verification_report.csv
+```
+
+Full documentation is available in:
+
+```text
+docs/azure_key_vault.md
+```

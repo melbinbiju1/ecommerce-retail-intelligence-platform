@@ -1017,3 +1017,70 @@ Business users / API clients / dashboard layer
 ```
 
 The Azure App Service layer completes the application-serving part of the cloud architecture.
+
+
+## Azure Key Vault Security Layer
+
+The platform uses Azure Key Vault to manage sensitive runtime configuration for the deployed FastAPI API.
+
+### Secret Resolution Flow
+
+```text
+Azure Key Vault
+        ↓
+Key Vault references in App Service settings
+        ↓
+Azure App Service managed identity
+        ↓
+Resolved environment variables
+        ↓
+FastAPI application
+```
+
+### Role in Architecture
+
+| Component | Responsibility |
+|---|---|
+| Azure Key Vault | Stores SQL credentials and API keys |
+| App Service managed identity | Authenticates App Service to Key Vault |
+| App Service Key Vault references | Inject secrets into runtime environment variables |
+| FastAPI application | Reads resolved values as normal environment variables |
+| Azure SQL Database | Receives authenticated database connection |
+
+### Why This Matters
+
+The application does not need to store sensitive values directly in code, Docker images, GitHub, or plain App Service settings.
+
+This creates a cleaner separation between:
+
+- Application code
+- Deployment configuration
+- Secret storage
+- Runtime access control
+
+### Updated Cloud Architecture
+
+```text
+Azure Blob Storage
+        ↓
+Azure Data Factory
+        ↓
+Azure SQL Database
+        ↑
+Azure Key Vault
+        ↓
+Azure App Service FastAPI API
+        ↓
+Authenticated API clients
+```
+
+### Runtime Modes
+
+The same FastAPI codebase supports both local and cloud operation:
+
+| Runtime | Database | Secret Handling |
+|---|---|---|
+| Local development | SQLite or Azure SQL | `.env` file |
+| Azure deployment | Azure SQL | Key Vault references |
+
+This allows the project to remain easy to develop locally while using stronger cloud security practices in Azure.

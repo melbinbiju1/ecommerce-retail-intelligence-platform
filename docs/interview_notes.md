@@ -402,3 +402,23 @@ The application is packaged into a Docker image with the required Python depende
 - API authentication
 - Cloud runtime configuration
 - Deployment verification
+
+## Azure Key Vault Interview Notes
+
+### Simple Explanation
+
+I added Azure Key Vault to manage sensitive values for the deployed API. Instead of storing SQL credentials and API keys directly in App Service settings, I stored them in Key Vault and used Key Vault references. The App Service uses managed identity to read those secrets securely.
+
+### Technical Explanation
+
+The Key Vault uses Azure RBAC. My developer account has the Key Vault Secrets Officer role so I can create and manage secrets. The App Service has a system-assigned managed identity with the Key Vault Secrets User role. App Service application settings use `@Microsoft.KeyVault(...)` references for SQL credentials and API keys. At runtime, App Service resolves the references and exposes the values as environment variables to the FastAPI container.
+
+### Skills Demonstrated
+
+- Azure Key Vault
+- Secret management
+- Managed identity
+- Azure RBAC
+- App Service Key Vault references
+- Secure runtime configuration
+- Cloud deployment hardening

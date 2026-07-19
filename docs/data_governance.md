@@ -619,3 +619,108 @@ Current limitations are intentionally documented for transparency:
 - Key Vault integration is not yet implemented.
 
 These limitations will be addressed in later phases through Azure Key Vault, monitoring, and final deployment hardening.
+
+
+## Azure Key Vault Governance
+
+Azure Key Vault is used to centralize and protect sensitive runtime values for the deployed API.
+
+### Governed Secrets
+
+The following secret categories are governed through Key Vault:
+
+| Secret Category | Examples |
+|---|---|
+| Database connection values | SQL server, database name, username, password |
+| API access keys | Admin, Analyst, Viewer API keys |
+
+Actual values are not documented and are not committed to source control.
+
+---
+
+### Access Control Model
+
+The Key Vault uses Azure role-based access control.
+
+| Principal | Role | Purpose |
+|---|---|---|
+| Developer Azure user | `Key Vault Secrets Officer` | Create and manage secrets |
+| App Service managed identity | `Key Vault Secrets User` | Read secrets at runtime |
+
+This follows least-privilege principles:
+
+- The developer can manage secrets.
+- The application can only read secrets.
+- The application does not need vault administration rights.
+
+---
+
+### Secret Storage Policy
+
+Secrets must not be stored in:
+
+- GitHub source code
+- Docker images
+- Documentation files
+- README files
+- Screenshots
+- `.env.example`
+
+The `.env.example` file contains placeholders only.
+
+The real `.env` file is excluded from Git tracking.
+
+---
+
+### Runtime Secret Injection
+
+App Service uses Key Vault references in application settings.
+
+Example pattern:
+
+```text
+@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-password)
+```
+
+At runtime, App Service resolves this reference and exposes the resolved value as an environment variable.
+
+The FastAPI app does not need to directly call Key Vault.
+
+---
+
+### Verification Evidence
+
+The Key Vault configuration is verified using:
+
+```powershell
+python scripts\verify_key_vault_setup.py
+```
+
+The verification report is stored at:
+
+```text
+data/processed/key_vault_setup_verification_report.csv
+```
+
+This report confirms that the deployed API still works after secret values are moved from App Service plain settings to Key Vault references.
+
+---
+
+### Current Security Position
+
+Implemented controls:
+
+- Key Vault stores SQL credentials and API keys.
+- App Service uses managed identity for secret access.
+- App Service also uses managed identity for ACR image pull.
+- API endpoints are protected with role-based API keys.
+- Real secrets are excluded from GitHub.
+- `.env.example` uses placeholders only.
+
+Remaining future improvements:
+
+- Rotate API keys periodically.
+- Use versioned Docker image tags instead of `latest`.
+- Add Azure Monitor alerts.
+- Consider Entra ID authentication for production-grade API security.
+- Consider managed identity authentication to Azure SQL in a future advanced phase.

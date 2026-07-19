@@ -1009,3 +1009,57 @@ These objects are migrated to Azure SQL using:
 ```powershell
 python scripts\migrate_api_serving_views_to_azure_sql.py
 ```
+
+## Azure Key Vault Verification Outputs
+
+This section documents files and configuration related to Azure Key Vault secret management.
+
+### Verification Script
+
+| File | Description |
+|---|---|
+| `scripts/verify_key_vault_setup.py` | Verifies that the deployed API still works after App Service settings are changed to Key Vault references |
+
+### Verification Report
+
+| File | Description |
+|---|---|
+| `data/processed/key_vault_setup_verification_report.csv` | CSV report containing endpoint checks after Key Vault integration |
+
+### Verification Report Columns
+
+| Column | Description |
+|---|---|
+| `check_name` | Name of the verification check |
+| `url` | Deployed API endpoint tested |
+| `status_code` | HTTP status code returned by the endpoint |
+| `passed` | Boolean result showing whether the check passed |
+| `response_preview` | Short preview of the API response body |
+
+### Key Vault Secret Names
+
+| Secret name | Used by App Setting |
+|---|---|
+| `azure-sql-server` | `AZURE_SQL_SERVER` |
+| `azure-sql-database` | `AZURE_SQL_DATABASE` |
+| `azure-sql-username` | `AZURE_SQL_USERNAME` |
+| `azure-sql-password` | `AZURE_SQL_PASSWORD` |
+| `admin-api-key` | `ADMIN_API_KEY` |
+| `analyst-api-key` | `ANALYST_API_KEY` |
+| `viewer-api-key` | `VIEWER_API_KEY` |
+
+### App Service Key Vault Reference Format
+
+```text
+@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=<secret-name>)
+```
+
+### Non-Secret Runtime Settings
+
+| Setting | Purpose |
+|---|---|
+| `APP_ENV` | Tells the API to run in local or Azure mode |
+| `AZURE_SQL_DRIVER` | Defines the ODBC driver used for Azure SQL |
+| `WEBSITES_PORT` | Tells App Service which port the container listens on |
+| `AZURE_APP_BASE_URL` | Used locally by verification scripts to test the deployed API |
+| `AZURE_KEY_VAULT_NAME` | Documents the configured Azure Key Vault name |
