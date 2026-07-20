@@ -1,6 +1,7 @@
 # E-Commerce Retail Intelligence Platform
 
 ![CI Pipeline](https://github.com/melbinbiju1/ecommerce-retail-intelligence-platform/actions/workflows/ci.yml/badge.svg)
+![CD Pipeline](https://github.com/melbinbiju1/ecommerce-retail-intelligence-platform/actions/workflows/cd-azure-app.yml/badge.svg)
 
 An end-to-end Data Engineering and AI Business Insights platform built using the Olist Brazilian E-Commerce dataset.
 
@@ -528,24 +529,25 @@ The local Docker version mounts the SQLite database file into the container at r
 
 In the Azure version, the API will connect to Azure SQL Database instead of using the local SQLite database file. Secrets will be managed through Azure Key Vault.
 
+## GitHub Actions CI/CD
 
-## GitHub Actions CI Pipeline
+The project includes GitHub Actions workflows for both Continuous Integration and Continuous Deployment.
 
-The project includes a GitHub Actions CI pipeline to automatically validate the repository when code is pushed to GitHub.
+The CI pipeline validates the project when code is pushed to GitHub. The CD pipeline builds the FastAPI Docker image, pushes it to Azure Container Registry, updates Azure App Service, restarts the deployed app, and verifies the `/health/` endpoint.
 
-The workflow file is located at:
+---
+
+### CI Pipeline
+
+The CI workflow is located at:
 
 ```text
 .github/workflows/ci.yml
 ```
 
-### CI Pipeline Purpose
+The CI pipeline validates that the project can be installed, imported, checked, and containerised successfully in a clean GitHub Actions environment.
 
-The CI pipeline checks that the project can be installed, imported, verified, and containerised successfully in a clean GitHub Actions environment.
-
-This provides a Continuous Integration foundation before the later Azure deployment phases.
-
-### CI Pipeline Checks
+#### CI Pipeline Checks
 
 | Step | Purpose |
 |---|---|
@@ -553,49 +555,168 @@ This provides a Continuous Integration foundation before the later Azure deploym
 | Confirm database is not tracked | Ensures the large local SQLite database is not committed to GitHub |
 | Set up Python | Installs Python 3.10 |
 | Install dependencies | Installs packages from `requirements.txt` |
-| Validate Python syntax | Runs `python -m compileall src scripts` |
-| Validate imports | Confirms core API and AI insight modules can be imported |
-| Verify Docker setup | Runs `scripts/verify_docker_setup.py` |
-| Verify CI setup | Runs `scripts/verify_ci_setup.py` |
-| Build Docker image | Confirms the Docker image can be built successfully |
+| Validate Python syntax | Runs Python compile checks against source and script files |
+| Validate core imports | Confirms important API and insight modules can be imported |
+| Verify Docker setup | Runs Docker setup verification |
+| Verify CI setup | Runs CI setup verification |
+| Build Docker image | Confirms the API Docker image can be built successfully |
 
-### Trigger Events
+#### CI Pipeline Screenshot
 
-The CI pipeline runs on:
+![GitHub Actions CI Pipeline success](docs/images/02a_ci_pipeline_success.png)
 
-- Pushes to the `main` or `master` branch
-- Pull requests targeting `main` or `master`
-- Manual workflow dispatch from GitHub Actions
+---
 
-### Local Equivalent Commands
+### CD Pipeline
 
-Before pushing to GitHub, the main CI checks can be run locally:
+The CD workflow is located at:
 
-```powershell
-pip install -r requirements.txt
-python -m compileall src scripts
-python scripts\verify_docker_setup.py
-python scripts\verify_ci_setup.py
-docker build -t ecommerce-retail-api .
+```text
+.github/workflows/cd-azure-app.yml
 ```
 
-### CI Database Design
+The CD pipeline deploys the FastAPI container to Azure App Service.
 
-The project does not commit the local SQLite database to GitHub because `retail_intelligence.db` is a large generated file.
+#### CD Deployment Flow
 
-The local Docker version mounts the SQLite database at runtime for local demonstration.
+```text
+Push to main branch
+        ↓
+GitHub Actions CD workflow
+        ↓
+Azure login using service principal
+        ↓
+Docker image build
+        ↓
+Push image to Azure Container Registry
+        ↓
+Ensure App Service managed identity exists
+        ↓
+Ensure App Service has AcrPull permission
+        ↓
+Configure App Service to use managed identity for ACR
+        ↓
+Set App Service container image
+        ↓
+Restart Azure App Service
+        ↓
+Verify deployed /health/ endpoint
+```
 
-In GitHub Actions, the CI pipeline uses database-independent validation checks.
+#### CD Pipeline Steps
 
-Full database/API tests are run locally for now and can be expanded in CI later after Azure SQL Database or a smaller CI test database is introduced.
+| Step | Purpose |
+|---|---|
+| Azure login | Authenticates GitHub Actions to Azure using a service principal |
+| Docker login to ACR | Authenticates to Azure Container Registry |
+| Build Docker image | Builds the FastAPI container image |
+| Push Docker image | Pushes both `latest` and commit-SHA image tags to ACR |
+| Ensure managed identity | Confirms the App Service has a system-assigned managed identity |
+| Ensure AcrPull permission | Confirms the App Service identity can pull images from ACR |
+| Configure ACR managed identity pull | Enables managed identity based image pull |
+| Set container image | Updates the App Service container image reference |
+| Restart App Service | Restarts the deployed API |
+| Verify `/health/` | Confirms the deployed API is running and connected to Azure SQL |
 
-### CI/CD Scope Note
+#### CD Pipeline Screenshot
 
-This phase implements Continuous Integration.
+![GitHub Actions CD Pipeline success](docs/images/02b_cd_pipeline_success.png)
 
-It does not automatically deploy the application to Azure yet.
+---
 
-Continuous Deployment will be added later after the Azure SQL Database, Azure Key Vault, Azure App hosting, and Azure Monitor phases are completed.
+### CI/CD Architecture
+
+```text
+GitHub main branch
+        ↓
+CI Pipeline
+        ↓
+Project validation and Docker build check
+        ↓
+CD Pipeline
+        ↓
+Docker image pushed to Azure Container Registry
+        ↓
+Azure App Service container updated
+        ↓
+Post-deployment health check
+```
+
+---
+
+### Deployment Verification
+
+The CD pipeline verifies the deployed API using the public health endpoint:
+
+```text
+https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "E-Commerce Retail Intelligence API",
+  "database_connected": true
+}
+```
+
+The `/health/` endpoint is used as a deployment smoke test because it confirms:
+
+- The FastAPI container is running
+- Azure App Service is reachable
+- The API can connect to Azure SQL Database
+- The latest deployment did not break application startup
+
+Protected business endpoints are verified separately using local verification scripts.
+
+---
+
+### CI/CD Security Design
+
+The CD workflow uses GitHub repository secrets for deployment configuration.
+
+| Secret | Purpose |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal credentials |
+| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
+| `AZURE_WEBAPP_NAME` | Azure App Service name |
+| `AZURE_RESOURCE_GROUP` | Azure resource group |
+| `AZURE_APP_BASE_URL` | Deployed API base URL |
+
+The App Service pulls Docker images from Azure Container Registry using managed identity and the `AcrPull` role.
+
+This avoids storing ACR username/password credentials in the App Service configuration.
+
+---
+
+### CI/CD Troubleshooting Note
+
+During CD setup, an initial deployment failed because Azure App Service could not pull the Docker image from Azure Container Registry.
+
+The issue was diagnosed as:
+
+```text
+ImagePullUnauthorizedFailure
+```
+
+It was fixed by:
+
+```text
+Enabling App Service managed identity
+Assigning AcrPull permission on Azure Container Registry
+Configuring App Service to use managed identity for ACR pulls
+Updating the CD workflow to preserve this configuration
+```
+
+The final CI and CD workflow runs are passing.
+
+Full CI/CD documentation is available in:
+
+```text
+docs/azure_ci_cd.md
+```
 
 
 ## Azure Blob Storage

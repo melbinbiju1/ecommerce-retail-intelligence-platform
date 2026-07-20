@@ -978,3 +978,156 @@ Documentation
 ```
 
 This improves the project from a simple analytics build into a more complete cloud data engineering platform.
+
+## CI/CD Governance
+
+The project includes GitHub Actions CI/CD governance to make validation and deployment more controlled and repeatable.
+
+CI/CD governance ensures that the application is not deployed only through manual local commands. Instead, code changes pushed to GitHub trigger automated validation and deployment workflows.
+
+---
+
+### CI/CD Governance Flow
+
+```text
+Code pushed to GitHub
+        ↓
+CI pipeline validates project
+        ↓
+CD pipeline builds Docker image
+        ↓
+Image pushed to Azure Container Registry
+        ↓
+Azure App Service updated
+        ↓
+Deployment health check verifies /health/
+```
+
+---
+
+### CI Controls
+
+The CI pipeline provides pre-deployment validation.
+
+| Control | Purpose |
+|---|---|
+| Dependency installation | Confirms the project can install in a clean environment |
+| Python syntax validation | Confirms source and script files compile |
+| Import validation | Confirms key application modules can be imported |
+| Docker setup verification | Confirms Docker-related files and configuration exist |
+| CI setup verification | Confirms CI configuration is present and valid |
+| Docker image build | Confirms the API image can be built successfully |
+| Database tracking check | Prevents the large local SQLite database from being committed |
+
+---
+
+### CD Controls
+
+The CD pipeline provides controlled deployment to Azure App Service.
+
+| Control | Purpose |
+|---|---|
+| Azure service principal | Allows GitHub Actions to authenticate to Azure securely |
+| GitHub repository secrets | Stores deployment values outside source code |
+| Docker image tagging | Tags images as both `latest` and Git commit SHA |
+| ACR image push | Publishes deployable images to Azure Container Registry |
+| App Service managed identity | Allows secure Azure-side identity management |
+| AcrPull role check | Confirms the App Service can pull images from ACR |
+| Managed identity ACR pull setting | Avoids storing ACR username/password credentials |
+| App Service restart | Applies the new image deployment |
+| `/health/` verification | Confirms the deployed API is running and connected to Azure SQL |
+
+---
+
+### Secret Governance in CI/CD
+
+The CD workflow uses GitHub Actions secrets for deployment configuration.
+
+| Secret | Purpose |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal credentials |
+| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
+| `AZURE_WEBAPP_NAME` | Azure App Service name |
+| `AZURE_RESOURCE_GROUP` | Azure resource group |
+| `AZURE_APP_BASE_URL` | Deployed API base URL |
+
+The workflow does not commit these values to Git.
+
+Application runtime secrets such as SQL passwords and API keys remain stored in Azure Key Vault.
+
+---
+
+### Deployment Identity Governance
+
+The final deployment design uses managed identity for Azure Container Registry image pulls.
+
+```text
+Azure App Service managed identity
+        ↓
+AcrPull role on Azure Container Registry
+        ↓
+Managed identity based image pull
+```
+
+This avoids storing registry credentials directly in the App Service configuration.
+
+---
+
+### CI/CD Verification Evidence
+
+CI/CD evidence is captured through GitHub Actions workflow runs.
+
+Screenshots:
+
+| Evidence | File |
+|---|---|
+| CI pipeline success | `docs/images/02a_ci_pipeline_success.png` |
+| CD pipeline success | `docs/images/02b_cd_pipeline_success.png` |
+
+Documentation:
+
+```text
+docs/azure_ci_cd.md
+```
+
+---
+
+### CI/CD Incident and Resolution
+
+During CD implementation, an initial deployment failed because Azure App Service could not pull the Docker image from Azure Container Registry.
+
+The issue was:
+
+```text
+ImagePullUnauthorizedFailure
+```
+
+Resolution:
+
+```text
+Enable App Service managed identity
+Assign AcrPull permission to the App Service identity
+Set acrUseManagedIdentityCreds=true
+Update the CD workflow to preserve managed identity based ACR pull
+Verify the deployed /health/ endpoint
+```
+
+This demonstrates a realistic cloud troubleshooting and governance improvement.
+
+---
+
+### CI/CD Governance Outcome
+
+The project now has a controlled deployment process:
+
+```text
+GitHub push
+        ↓
+Automated CI validation
+        ↓
+Automated container build and deployment
+        ↓
+Post-deployment health verification
+```
+
+This improves the project from manual deployment to a repeatable CI/CD-enabled cloud platform.

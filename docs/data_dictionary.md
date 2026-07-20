@@ -1233,6 +1233,148 @@ Safe placeholder values are documented in `.env.example`.
 
 ---
 
+## GitHub Actions CI/CD Artifacts
+
+This section documents the CI/CD files, workflows, secrets, and screenshot evidence used in the project.
+
+---
+
+### CI/CD Workflow Files
+
+| File | Description |
+|---|---|
+| `.github/workflows/ci.yml` | Continuous Integration workflow that validates project setup, imports, Docker setup, CI setup, and Docker image build |
+| `.github/workflows/cd-azure-app.yml` | Continuous Deployment workflow that builds the Docker image, pushes it to Azure Container Registry, deploys to Azure App Service, and verifies the `/health/` endpoint |
+
+---
+
+### CI/CD Documentation
+
+| File | Description |
+|---|---|
+| `docs/azure_ci_cd.md` | Documents GitHub Actions CI/CD architecture, deployment flow, secrets, managed identity ACR pull, troubleshooting, and verification |
+| `README.md` | Includes summary of CI/CD workflows and screenshots |
+| `docs/setup_guide.md` | Includes setup and verification steps for CI/CD |
+| `docs/architecture.md` | Includes CI/CD architecture flow |
+| `docs/data_governance.md` | Includes CI/CD governance and deployment controls |
+
+---
+
+### CI/CD Screenshot Evidence
+
+| Screenshot | Description |
+|---|---|
+| `docs/images/02a_ci_pipeline_success.png` | Shows successful GitHub Actions CI Pipeline run |
+| `docs/images/02b_cd_pipeline_success.png` | Shows successful GitHub Actions CD Pipeline run |
+
+---
+
+### CI Pipeline Checks
+
+| Check | Description |
+|---|---|
+| Checkout repository | Loads the repository into the GitHub Actions runner |
+| Confirm database is not tracked | Ensures the large local SQLite database is not committed |
+| Set up Python | Installs Python 3.10 |
+| Install dependencies | Installs packages from `requirements.txt` |
+| Validate Python syntax | Compiles Python source and script files |
+| Validate imports | Confirms important application modules can be imported |
+| Verify Docker setup | Runs Docker setup verification |
+| Verify CI setup | Runs CI setup verification |
+| Build Docker image | Confirms the Docker image can be built successfully |
+
+---
+
+### CD Pipeline Steps
+
+| Step | Description |
+|---|---|
+| Checkout repository | Loads the repository into the GitHub Actions runner |
+| Azure login | Authenticates to Azure using a service principal stored in GitHub Secrets |
+| Docker login to ACR | Authenticates to Azure Container Registry |
+| Build Docker image | Builds the FastAPI Docker image |
+| Push Docker image | Pushes `latest` and commit-SHA image tags to Azure Container Registry |
+| Ensure App Service managed identity exists | Confirms the Web App has a system-assigned managed identity |
+| Ensure App Service has AcrPull permission | Confirms the Web App identity can pull images from ACR |
+| Configure managed identity ACR pull | Sets App Service to use managed identity credentials for ACR image pulls |
+| Set App Service container image | Updates the Web App container image reference |
+| Restart Azure App Service | Restarts the deployed API container |
+| Verify `/health/` endpoint | Confirms the deployed API is running and connected to Azure SQL |
+
+---
+
+### GitHub Actions Secrets
+
+| Secret | Description |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal JSON used by GitHub Actions |
+| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
+| `AZURE_WEBAPP_NAME` | Azure App Service name |
+| `AZURE_RESOURCE_GROUP` | Azure resource group |
+| `AZURE_APP_BASE_URL` | Base URL of the deployed API |
+
+Sensitive values are stored in GitHub repository secrets and are not committed to Git.
+
+---
+
+### Azure Resources Used by CD
+
+| Resource | Name |
+|---|---|
+| Azure Container Registry | `acrecommerceretailmelbin` |
+| ACR login server | `acrecommerceretailmelbin.azurecr.io` |
+| Azure App Service | `app-ecommerce-retail-api-melbin` |
+| Resource group | `rg-ecommerce-retail-intelligence` |
+| Container image | `ecommerce-retail-api:latest` |
+| Deployed health endpoint | `/health/` |
+
+---
+
+### CI/CD Verification Outcome
+
+The final CI/CD implementation verifies that:
+
+```text
+The repository validates successfully in GitHub Actions
+The Docker image builds successfully
+The Docker image pushes to Azure Container Registry
+Azure App Service can pull the image using managed identity
+The deployed FastAPI API starts successfully
+The /health/ endpoint returns HTTP 200
+The API can connect to Azure SQL Database
+```
+
+---
+
+### CI/CD Troubleshooting Record
+
+During implementation, the CD pipeline surfaced an Azure image pull issue.
+
+Error:
+
+```text
+ImagePullUnauthorizedFailure
+```
+
+Cause:
+
+```text
+Azure App Service could not pull the Docker image from Azure Container Registry using the expected identity configuration.
+```
+
+Resolution:
+
+```text
+Enabled App Service managed identity
+Assigned AcrPull permission on Azure Container Registry
+Set acrUseManagedIdentityCreds=true
+Updated the CD workflow to preserve managed identity based ACR pulls
+Restarted the App Service
+Verified /health/ returned successfully
+```
+
+This troubleshooting record is useful because it shows realistic cloud deployment debugging.
+
 ## Final Technical Completion Evidence
 
 The project is technically complete when the following are true:

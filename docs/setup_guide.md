@@ -1082,6 +1082,103 @@ Azure monitoring setup verification passed
 
 ---
 
+## GitHub Actions CI/CD Setup
+
+The project includes GitHub Actions workflows for Continuous Integration and Continuous Deployment.
+
+| Workflow | File | Purpose |
+|---|---|---|
+| CI Pipeline | `.github/workflows/ci.yml` | Validates code, imports, setup, and Docker build |
+| CD Pipeline | `.github/workflows/cd-azure-app.yml` | Builds the Docker image, pushes it to ACR, deploys to Azure App Service, and verifies `/health/` |
+
+---
+
+### GitHub Secrets Required for CD
+
+The CD workflow uses GitHub repository secrets.
+
+| Secret | Purpose |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal JSON |
+| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
+| `AZURE_WEBAPP_NAME` | Azure App Service name |
+| `AZURE_RESOURCE_GROUP` | Azure resource group |
+| `AZURE_APP_BASE_URL` | Deployed API base URL |
+
+---
+
+### CD Deployment Flow
+
+```text
+Push to main
+        ↓
+GitHub Actions CD workflow
+        ↓
+Azure login using service principal
+        ↓
+Docker image build
+        ↓
+Push image to Azure Container Registry
+        ↓
+Ensure App Service managed identity exists
+        ↓
+Ensure App Service has AcrPull permission
+        ↓
+Configure managed identity ACR image pull
+        ↓
+Set App Service container image
+        ↓
+Restart Azure App Service
+        ↓
+Verify /health/ endpoint
+```
+
+---
+
+### Important Runtime Requirement
+
+The CD workflow verifies the deployed API using:
+
+```text
+/health/
+```
+
+Because the health endpoint checks Azure SQL connectivity, Azure SQL Database must be online when the CD workflow runs.
+
+Expected health response:
+
+```json
+{
+  "status": "ok",
+  "service": "E-Commerce Retail Intelligence API",
+  "database_connected": true
+}
+```
+
+---
+
+### CI/CD Verification
+
+After pushing to GitHub, confirm both workflows pass:
+
+```text
+CI Pipeline: Passed
+CD - Deploy FastAPI Container to Azure App Service: Passed
+```
+
+Screenshots:
+
+```text
+docs/images/02a_ci_pipeline_success.png
+docs/images/02b_cd_pipeline_success.png
+```
+
+Full CI/CD documentation:
+
+```text
+docs/azure_ci_cd.md
+```
+
 ## Final Technical Completion Criteria
 
 The project is technically complete when the following are done:
@@ -1096,7 +1193,7 @@ API backend completed
 Authentication and RBAC completed
 Automated tests completed
 Docker setup completed
-GitHub Actions CI completed
+GitHub Actions CI/CD completed
 Azure Blob Storage completed
 Azure SQL Database completed
 Azure Data Factory completed

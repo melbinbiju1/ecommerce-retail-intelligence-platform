@@ -1300,6 +1300,174 @@ Automated tests
 | Application Insights for monitoring | Provides external availability testing and alerting |
 | Power BI deferred to final phase | Keeps dashboarding as the presentation layer after engineering completion |
 
+## GitHub Actions CI/CD Architecture
+
+The project includes separate GitHub Actions workflows for CI and CD.
+
+| Workflow | File | Purpose |
+|---|---|---|
+| CI Pipeline | `.github/workflows/ci.yml` | Validates code, imports, setup checks, and Docker image build |
+| CD Pipeline | `.github/workflows/cd-azure-app.yml` | Builds and deploys the FastAPI Docker image to Azure App Service |
+
+---
+
+### CI/CD Architecture Flow
+
+```text
+Developer pushes code to main
+        ↓
+GitHub Actions CI Pipeline
+        ↓
+Validate project structure, imports, setup checks, and Docker build
+        ↓
+GitHub Actions CD Pipeline
+        ↓
+Login to Azure using service principal
+        ↓
+Build Docker image
+        ↓
+Push Docker image to Azure Container Registry
+        ↓
+Ensure App Service managed identity exists
+        ↓
+Ensure App Service identity has AcrPull permission
+        ↓
+Configure managed identity based ACR image pull
+        ↓
+Set App Service container image
+        ↓
+Restart Azure App Service
+        ↓
+Verify deployed /health/ endpoint
+```
+
+---
+
+### CI Pipeline Role
+
+The CI pipeline validates that the project is buildable and structurally correct before deployment.
+
+It checks:
+
+- Python dependency installation
+- Python syntax compilation
+- Core imports
+- Docker setup verification
+- CI setup verification
+- Docker image build
+- Large database file is not tracked by Git
+
+This provides confidence that the repository can be built in a clean GitHub Actions environment.
+
+---
+
+### CD Pipeline Role
+
+The CD pipeline automates deployment to Azure App Service.
+
+It performs:
+
+- Azure login using a service principal
+- Docker image build
+- Docker image push to Azure Container Registry
+- App Service managed identity validation
+- `AcrPull` permission validation
+- Managed identity based ACR image pull configuration
+- App Service container image update
+- Web App restart
+- Post-deployment health check
+
+This turns deployment from a manual Docker push process into a repeatable GitHub Actions deployment process.
+
+---
+
+### Container Deployment Flow
+
+```text
+GitHub Actions runner
+        ↓
+Docker build
+        ↓
+Azure Container Registry
+        ↓
+Azure App Service pulls image
+        ↓
+FastAPI container starts
+        ↓
+/health/ endpoint validates API and Azure SQL connectivity
+```
+
+---
+
+### Managed Identity ACR Pull Flow
+
+Azure App Service pulls the Docker image from Azure Container Registry using managed identity.
+
+```text
+App Service system-assigned managed identity
+        ↓
+AcrPull role on Azure Container Registry
+        ↓
+acrUseManagedIdentityCreds = true
+        ↓
+Secure image pull from ACR
+```
+
+This avoids storing ACR username/password credentials in App Service configuration.
+
+---
+
+### Post-Deployment Verification Flow
+
+The CD workflow verifies the deployed app using the public health endpoint:
+
+```text
+/health/
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "E-Commerce Retail Intelligence API",
+  "database_connected": true
+}
+```
+
+The health check confirms:
+
+- App Service is reachable
+- FastAPI container started successfully
+- The API can connect to Azure SQL Database
+
+Because the health endpoint checks Azure SQL connectivity, Azure SQL Database must be online when the CD workflow runs.
+
+---
+
+### CI/CD Troubleshooting Outcome
+
+During implementation, the first CD deployment surfaced an Azure image pull issue:
+
+```text
+ImagePullUnauthorizedFailure
+```
+
+The issue was resolved by:
+
+```text
+Enabling App Service managed identity
+Assigning AcrPull permission on Azure Container Registry
+Setting acrUseManagedIdentityCreds=true
+Updating the CD workflow to preserve managed identity based ACR pull
+```
+
+This final design is documented in:
+
+```text
+docs/azure_ci_cd.md
+```
+
 ### Final Technical Documentation
 
 For cleaner final documentation, use:

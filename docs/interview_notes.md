@@ -650,3 +650,110 @@ This is an end-to-end cloud data engineering project for e-commerce retail intel
 ```text
 I built a monitored Azure-hosted retail intelligence API from raw e-commerce data using Python, SQL, dbt, FastAPI, Docker, Azure SQL, Key Vault, and Application Insights.
 ```
+
+
+## GitHub Actions CI/CD Interview Notes
+
+### 1. Simple CI/CD Explanation
+
+```text
+I added GitHub Actions CI/CD to automate validation and deployment. The CI workflow validates the project and Docker build, while the CD workflow builds the FastAPI Docker image, pushes it to Azure Container Registry, updates Azure App Service, restarts the deployed API, and verifies the /health/ endpoint.
+```
+
+---
+
+### 2. Technical CI/CD Explanation
+
+```text
+The project has two GitHub Actions workflows. The CI workflow validates Python syntax, imports, setup checks, Docker setup, and Docker image build. The CD workflow logs in to Azure using a service principal stored in GitHub Secrets, builds the Docker image, pushes latest and commit-SHA tags to Azure Container Registry, configures App Service managed identity based ACR pull, updates the App Service container image, restarts the Web App, and verifies the deployed /health/ endpoint with retry logic.
+```
+
+---
+
+### 3. Why I Added CD
+
+```text
+Initially, the project had CI and manual Azure deployment. I added CD to make the deployment process more professional and repeatable. Now a push to the main branch can validate the project, build the container image, push it to ACR, deploy it to Azure App Service, and verify that the API is healthy.
+```
+
+---
+
+### 4. CI Pipeline Explanation
+
+```text
+The CI pipeline runs on GitHub Actions and checks whether the project can be built in a clean environment. It installs dependencies, validates Python files, checks important imports, verifies Docker and CI setup, confirms the large SQLite database is not tracked, and builds the Docker image.
+```
+
+---
+
+### 5. CD Pipeline Explanation
+
+```text
+The CD pipeline automates the Azure container deployment. It builds the FastAPI Docker image, pushes it to Azure Container Registry, ensures the Azure App Service managed identity exists, confirms AcrPull permission, configures managed identity based image pull, updates the App Service container image, restarts the app, and checks the /health/ endpoint.
+```
+
+---
+
+### 6. Why I Used Managed Identity for ACR Pull
+
+```text
+I used App Service managed identity to pull the Docker image from Azure Container Registry instead of storing ACR username and password credentials in App Service. The App Service identity has the AcrPull role on the registry, and the workflow ensures acrUseManagedIdentityCreds is enabled.
+```
+
+---
+
+### 7. Why the CD Workflow Checks Only `/health/`
+
+```text
+The CD workflow uses /health/ as a deployment smoke test. That endpoint confirms the FastAPI container is running, Azure App Service is reachable, and the API can connect to Azure SQL Database. Protected business endpoints are verified separately using local verification scripts, so I do not need to store admin API keys in GitHub Actions secrets.
+```
+
+---
+
+### 8. CD Issue I Troubleshot
+
+```text
+During CD setup, one deployment failed because Azure App Service could not pull the Docker image from Azure Container Registry. The runtime error was ImagePullUnauthorizedFailure. I diagnosed it as an ACR pull permission and managed identity configuration issue.
+```
+
+---
+
+### 9. How I Fixed the CD Issue
+
+```text
+I fixed the deployment issue by enabling the App Service managed identity, assigning it AcrPull permission on Azure Container Registry, setting acrUseManagedIdentityCreds=true, resetting the App Service container image, restarting the app, and updating the CD workflow to preserve this managed identity based pull configuration.
+```
+
+---
+
+### 10. What the CI/CD Screenshots Show
+
+```text
+The CI screenshot shows that the repository validation and Docker build pipeline passed. The CD screenshot shows that the container image was built, pushed to Azure Container Registry, deployed to Azure App Service, and verified through the /health/ endpoint.
+```
+
+---
+
+### 11. Professional CI/CD Summary
+
+```text
+The final project has GitHub Actions CI/CD. CI validates the codebase and Docker build, while CD automates Docker image build, ACR push, Azure App Service deployment, managed identity based image pull, Web App restart, and post-deployment health verification.
+```
+
+---
+
+### 12. 30-Second CI/CD Interview Answer
+
+```text
+I implemented GitHub Actions CI/CD for the deployed FastAPI API. The CI workflow validates the repository and Docker build. The CD workflow logs in to Azure with a service principal, builds and pushes the Docker image to Azure Container Registry, updates Azure App Service, restarts the app, and verifies the /health/ endpoint. I also configured managed identity and AcrPull so App Service can securely pull the image from ACR.
+```
+
+---
+
+### 13. Updated Final 60-Second Project Pitch
+
+```text
+I built an end-to-end e-commerce retail intelligence platform using Python, SQL, dbt, FastAPI, Docker, GitHub Actions, and Azure. The project ingests raw Olist e-commerce data, validates data quality, builds dimensional warehouse tables, creates operational anomaly detection outputs, and exposes business metrics through a secured API.
+
+For the cloud layer, I uploaded raw data to Azure Blob Storage, used Azure Data Factory for a copy pipeline, migrated curated outputs to Azure SQL, deployed the API as a Docker container on Azure App Service, secured secrets with Azure Key Vault, monitored the /health/ endpoint with Application Insights, and added GitHub Actions CI/CD to automate validation, Docker image build, ACR push, Azure App Service deployment, and post-deployment health verification.
+```
