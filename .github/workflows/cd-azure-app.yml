@@ -24,9 +24,13 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set deployment variables
+        run: |
+          echo "ACR_NAME=$(echo '${{ secrets.ACR_LOGIN_SERVER }}' | cut -d'.' -f1)" >> $GITHUB_ENV
+
       - name: Docker login to Azure Container Registry
         run: |
-          az acr login --name $(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)
+          az acr login --name "${{ env.ACR_NAME }}"
 
       - name: Build Docker image
         run: |
@@ -40,11 +44,43 @@ jobs:
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Deploy image to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      - name: Ensure App Service managed identity exists
+        run: |
+          az webapp identity assign \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}"
+
+      - name: Ensure App Service has AcrPull permission
+        run: |
+          PRINCIPAL_ID=$(az webapp identity show \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --query principalId \
+            --output tsv)
+
+          ACR_ID=$(az acr show \
+            --name "${{ env.ACR_NAME }}" \
+            --query id \
+            --output tsv)
+
+          az role assignment create \
+            --assignee "$PRINCIPAL_ID" \
+            --role AcrPull \
+            --scope "$ACR_ID" || true
+
+      - name: Configure App Service to use managed identity for ACR
+        run: |
+          az webapp config set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --generic-configurations '{"acrUseManagedIdentityCreds": true}'
+
+      - name: Set App Service container image
+        run: |
+          az webapp config container set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --container-image-name "${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
 
       - name: Restart Azure App Service
         run: |
@@ -54,8 +90,25 @@ jobs:
 
       - name: Wait for application startup
         run: |
-          sleep 60
+          sleep 90
 
-      - name: Verify deployed health endpoint
+      - name: Verify deployed health endpoint with retries
         run: |
-          curl --fail --show-error --silent "${{ secrets.AZURE_APP_BASE_URL }}/health/"
+          echo "Checking deployed API health endpoint..."
+
+          for i in {1..15}; do
+            echo "Health check attempt $i of 15"
+
+            if curl --fail --show-error --silent "${{ secrets.AZURE_APP_BASE_URL }}/health/"; then
+              echo ""
+              echo "Health check passed."
+              exit 0
+            fi
+
+            echo ""
+            echo "Health check failed. Waiting 30 seconds before retrying..."
+            sleep 30
+          done
+
+          echo "Health check failed after all retry attempts."
+          exit 1
