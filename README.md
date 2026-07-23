@@ -72,6 +72,35 @@ This platform helps decision-makers monitor performance, detect unusual business
 * Executive Leadership
 * Data and BI Team
 
+## Portfolio Showcase
+
+A screenshot-backed walkthrough of the completed platform is available here:
+
+```text
+docs/project_showcase.md
+```
+
+The showcase includes evidence for:
+
+```text
+GitHub repository and workflow badges
+GitHub Actions CI pipeline
+GitHub Actions CD pipeline
+FastAPI Swagger UI
+Health endpoint response
+Executive KPI API response
+Operational anomaly API response
+AI-ready insights API response
+Azure App Service deployment
+Azure Container Registry image repository
+Azure SQL Database tables
+Azure Blob Storage raw landing zone
+Azure Data Factory pipeline run
+Azure Key Vault secrets
+Application Insights availability monitoring
+Azure Monitor alert rule
+```
+
 ## Technology Stack
 
 | Area            | Tools                  |
@@ -179,22 +208,26 @@ Recommended reading order:
 
 ## Documentation Index
 
-| Document | Description |
+| Document | Purpose |
 |---|---|
-| `docs/setup_guide.md` | Full setup and verification guide |
-| `docs/architecture.md` | Detailed architecture notes |
-| `docs/final_architecture.md` | Final implemented architecture overview |
-| `docs/system_flow.md` | End-to-end system flow explanation |
-| `docs/technical_architecture.md` | Technical design and trade-off explanation |
-| `docs/data_dictionary.md` | Tables, reports, scripts, and artifact documentation |
-| `docs/data_governance.md` | Data quality, security, monitoring, and governance notes |
-| `docs/azure_blob_storage.md` | Azure Blob Storage setup |
-| `docs/azure_sql_database.md` | Azure SQL setup |
-| `docs/azure_data_factory.md` | Azure Data Factory setup |
-| `docs/azure_app_deployment.md` | Azure App Service deployment |
-| `docs/azure_key_vault.md` | Azure Key Vault setup |
-| `docs/azure_monitoring.md` | Azure monitoring and availability setup |
-| `docs/interview_notes.md` | Technical explanations and interview notes |
+| `docs/project_showcase.md` | Screenshot-backed portfolio walkthrough of the completed project |
+| `docs/final_architecture.md` | Final implemented architecture summary |
+| `docs/technical_architecture.md` | Technical architecture, design choices, and runtime details |
+| `docs/system_flow.md` | End-to-end system, data, API, deployment, and monitoring flow |
+| `docs/setup_guide.md` | Local, Docker, Azure, and CI/CD setup instructions |
+| `docs/data_dictionary.md` | Tables, views, files, scripts, reports, and API artifacts |
+| `docs/data_governance.md` | Data quality, security, access, deployment, and monitoring governance |
+| `docs/data_lineage.md` | Source-to-serving data lineage |
+| `docs/azure_blob_storage.md` | Azure Blob Storage raw data landing zone |
+| `docs/azure_sql_database.md` | Azure SQL migration and serving database setup |
+| `docs/azure_data_factory.md` | Azure Data Factory orchestration setup |
+| `docs/azure_app_deployment.md` | Azure App Service container deployment |
+| `docs/azure_key_vault.md` | Azure Key Vault secret management |
+| `docs/azure_monitoring.md` | Application Insights availability monitoring and alerts |
+| `docs/azure_ci_cd.md` | GitHub Actions CI/CD deployment automation |
+| `docs/cost_optimisation.md` | Cost-conscious Azure resource decisions |
+| `docs/project_scope.md` | Project scope, boundaries, and implementation choices |
+| `docs/azure_sql_migration_plan.md` | Azure SQL migration planning notes |
 
 ## Project Layers
 
@@ -1129,6 +1162,32 @@ The final technical build is complete when all relevant verification scripts pas
 
 ---
 
+## Portfolio Review Path
+
+For a quick review of the project, start with:
+
+```text
+README.md
+        ↓
+docs/project_showcase.md
+        ↓
+docs/final_architecture.md
+        ↓
+docs/azure_ci_cd.md
+        ↓
+docs/setup_guide.md
+```
+
+For deeper technical review, use:
+
+```text
+docs/technical_architecture.md
+docs/system_flow.md
+docs/data_dictionary.md
+docs/data_governance.md
+docs/data_lineage.md
+```
+
 ## Final Technical Outcome
 
 This project demonstrates a complete technical path from raw e-commerce data to a secured and monitored Azure-hosted analytics API.
@@ -1155,3 +1214,4 @@ Application Insights monitoring
 ```
 
 This completes the technical build before the portfolio packaging and Power BI presentation phases.
+
