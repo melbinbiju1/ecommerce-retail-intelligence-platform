@@ -183,15 +183,21 @@ This turns the project from a manually deployed API into a repeatable CI/CD-enab
 
 ---
 
-## 9. FastAPI Swagger Documentation
+## FastAPI Swagger Documentation
 
-The project exposes analytics and operational insights through a documented FastAPI backend.
+The project exposes analytics, operational risk, and AI-ready insight outputs through a documented FastAPI backend.
 
-![FastAPI Swagger UI](images/03_fastapi_swagger_ui.png)
+The Swagger UI shows the API structure, authentication routes, public health endpoints, and JWT-protected business endpoints.
+
+![FastAPI Swagger authentication routes](images/03a_fastapi_swagger_authentication.png)
+
+![FastAPI Swagger protected routes](images/03b_fastapi_swagger_protected_routes.png)
 
 The API includes endpoint groups for:
 
 ```text
+Root endpoint
+JWT authentication
 Health checks
 Executive KPIs
 Operational anomaly alerts
@@ -199,7 +205,7 @@ Risk summaries
 AI-ready business insights
 ```
 
-The Swagger UI demonstrates that the API is structured, documented, and testable.
+The lock icons indicate endpoints protected by JWT Bearer authentication.
 
 ---
 
