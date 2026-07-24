@@ -63,7 +63,7 @@ Product category translations
 | Cloud warehouse / serving database | Azure SQL Database |
 | Cloud orchestration | Azure Data Factory |
 | API layer | FastAPI |
-| Security | API keys, RBAC, Azure Key Vault |
+| Security | JWT authentication, RBAC, Azure Key Vault |
 | Containerisation | Docker |
 | Container registry | Azure Container Registry |
 | Cloud deployment | Azure App Service |
@@ -203,7 +203,37 @@ The Swagger UI demonstrates that the API is structured, documented, and testable
 
 ---
 
-## 10. Health Endpoint
+## 10. JWT Authentication Evidence
+
+The API includes JWT Bearer authentication with role-based access control.
+
+![JWT authentication Swagger section](images/16_jwt_authentication_swagger.png)
+
+Users authenticate through:
+
+```text
+POST /auth/login
+```
+
+The login endpoint returns a signed JWT access token. Protected endpoints are accessed with:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+The API supports three roles:
+
+```text
+admin
+analyst
+viewer
+```
+
+JWT secrets and demo user credentials are stored in Azure Key Vault for the deployed Azure App Service.
+
+---
+
+## 11. Health Endpoint
 
 The health endpoint confirms that the deployed API is running and connected to the serving database.
 
@@ -223,7 +253,7 @@ This endpoint is also used by the CD pipeline as a deployment smoke test.
 
 ---
 
-## 11. Executive KPI API Response
+## 12. Executive KPI API Response
 
 The executive summary endpoint provides high-level business performance metrics.
 
@@ -248,7 +278,7 @@ This demonstrates that curated warehouse outputs are accessible through the API.
 
 ---
 
-## 12. Operational Anomaly API Response
+## 13. Operational Anomaly API Response
 
 The operational alert summary endpoint exposes anomaly detection results.
 
@@ -270,7 +300,7 @@ This demonstrates the operational intelligence layer of the project.
 
 ---
 
-## 13. AI-Ready Business Insights API Response
+## 14. AI-Ready Business Insights API Response
 
 The AI-ready insights endpoint converts analytical outputs into structured business insight text.
 
@@ -289,7 +319,7 @@ This demonstrates how the analytics layer can support AI-assisted business repor
 
 ---
 
-## 14. Azure App Service Deployment
+## 15. Azure App Service Deployment
 
 The FastAPI application is deployed to Azure App Service as a Linux container.
 
@@ -310,7 +340,7 @@ This demonstrates cloud deployment of the API layer.
 
 ---
 
-## 15. Azure Container Registry
+## 16. Azure Container Registry
 
 The Docker image is stored in Azure Container Registry.
 
@@ -330,7 +360,7 @@ The CD pipeline pushes both `latest` and commit-SHA tags for deployment traceabi
 
 ---
 
-## 16. Azure SQL Database
+## 17. Azure SQL Database
 
 Curated warehouse tables and API serving objects are stored in Azure SQL Database.
 
@@ -351,7 +381,7 @@ This demonstrates that the local analytical outputs were migrated into a cloud s
 
 ---
 
-## 17. Azure Blob Storage
+## 18. Azure Blob Storage
 
 Raw source CSV files are stored in Azure Blob Storage.
 
@@ -367,7 +397,7 @@ This demonstrates a cloud landing zone for raw input data.
 
 ---
 
-## 18. Azure Data Factory Pipeline
+## 19. Azure Data Factory Pipeline
 
 Azure Data Factory is used to orchestrate a cloud copy pipeline from Blob Storage into Azure SQL staging.
 
@@ -387,7 +417,7 @@ This demonstrates cloud orchestration capability.
 
 ---
 
-## 19. Azure Key Vault
+## 20. Azure Key Vault
 
 Azure Key Vault stores application secrets separately from source code and App Service configuration.
 
@@ -400,16 +430,20 @@ Azure SQL server
 Azure SQL database
 Azure SQL username
 Azure SQL password
-Admin API key
-Analyst API key
-Viewer API key
+JWT signing secret
+JWT admin username
+JWT admin password
+JWT analyst username
+JWT analyst password
+JWT viewer username
+JWT viewer password
 ```
 
 Only secret names are shown. Secret values are not exposed.
 
 ---
 
-## 20. Application Insights Availability Monitoring
+## 21. Application Insights Availability Monitoring
 
 Application Insights monitors the deployed API health endpoint.
 
@@ -429,7 +463,7 @@ This demonstrates cloud monitoring for the deployed API.
 
 ---
 
-## 21. Azure Monitor Alert Rule
+## 22. Azure Monitor Alert Rule
 
 Azure Monitor includes an alert rule connected to the Application Insights availability test.
 
@@ -448,13 +482,13 @@ This demonstrates alerting for API availability risk.
 
 ---
 
-## 22. Security Design
+## 23. Security Design
 
 The project includes multiple security layers.
 
 | Layer | Security Design |
 |---|---|
-| API | API key authentication |
+| API | JWT Bearer authentication |
 | API access | Role-based access control |
 | Cloud secrets | Azure Key Vault |
 | App runtime secrets | Key Vault references in App Service |
@@ -464,7 +498,7 @@ The project includes multiple security layers.
 
 ---
 
-## 23. Testing and Verification
+## 24. Testing and Verification
 
 The project includes automated tests and verification scripts.
 
@@ -489,7 +523,7 @@ The CI workflow validates that the project builds successfully in GitHub Actions
 
 ---
 
-## 24. Project Outcome
+## 25. Project Outcome
 
 The final platform demonstrates:
 
@@ -514,7 +548,7 @@ Professional documentation and screenshots
 
 ---
 
-## 25. Skills Demonstrated
+## 26. Skills Demonstrated
 
 | Skill Area | Evidence |
 |---|---|
@@ -524,30 +558,14 @@ Professional documentation and screenshots
 | Python | ETL scripts, validation scripts, API backend |
 | Cloud engineering | Azure Blob, Azure SQL, ADF, App Service, Key Vault, Monitor |
 | API development | FastAPI endpoints, Swagger docs |
-| Security | API keys, RBAC, Key Vault, managed identity |
+| Security | JWT authentication, RBAC, Key Vault, managed identity |
 | DevOps | Docker, ACR, GitHub Actions CI/CD |
 | Monitoring | Application Insights availability test and alert rule |
 | Documentation | README, architecture docs, governance docs, project showcase |
 
 ---
 
-## 26. Recruiter-Friendly Summary
-
-```text
-Built a cloud data engineering portfolio platform using Python, SQL, dbt, FastAPI, Docker, GitHub Actions, and Azure. The platform processes e-commerce data, creates warehouse models and business KPIs, detects operational anomalies, exposes secured API endpoints, deploys as a containerized Azure App Service, stores secrets in Key Vault, monitors availability with Application Insights, and uses GitHub Actions CI/CD for automated validation and deployment.
-```
-
----
-
-## 27. Interview-Friendly Summary
-
-```text
-This project demonstrates the full lifecycle of a modern data engineering platform: raw data ingestion, data quality checks, warehouse modelling, KPI creation, anomaly detection, API serving, authentication, Docker deployment, Azure cloud integration, secret management, monitoring, and CI/CD automation.
-```
-
----
-
-## 28. Repository
+## 29. Repository
 
 ```text
 https://github.com/melbinbiju1/ecommerce-retail-intelligence-platform

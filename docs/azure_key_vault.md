@@ -4,7 +4,7 @@
 
 This phase adds Azure Key Vault to the E-Commerce Retail Intelligence Platform to improve cloud security and secret management.
 
-Before this phase, sensitive runtime values such as Azure SQL credentials and API keys were stored directly as Azure App Service environment variable values.
+Before this phase, sensitive runtime values such as Azure SQL credentials, JWT signing secrets, and authentication credentials could have been stored directly as Azure App Service environment variable values.
 
 After this phase, sensitive values are stored in Azure Key Vault. Azure App Service uses managed identity to access those secrets through Key Vault references.
 
@@ -23,7 +23,7 @@ Azure App Service managed identity
         ↓
 FastAPI environment variables
         ↓
-Azure SQL Database and protected API routes
+Azure SQL Database and JWT-protected API routes
 ```
 
 ---
@@ -53,6 +53,7 @@ This improves the project in several ways:
 - Azure role-based access control controls who and what can access secrets.
 - Future secret rotation becomes easier.
 - The project demonstrates a more professional cloud security pattern.
+- JWT signing secrets and demo user credentials are separated from source code and plain App Service configuration.
 
 ---
 
@@ -66,9 +67,13 @@ The following secrets are stored in Azure Key Vault:
 | `azure-sql-database` | Azure SQL Database name |
 | `azure-sql-username` | Azure SQL login username |
 | `azure-sql-password` | Azure SQL login password |
-| `admin-api-key` | Admin API key for protected API endpoints |
-| `analyst-api-key` | Analyst API key for analyst-level API access |
-| `viewer-api-key` | Viewer API key for limited read-only API access |
+| `jwt-secret-key` | Secret key used to sign JWT access tokens |
+| `jwt-admin-username` | Demo admin username |
+| `jwt-admin-password` | Demo admin password |
+| `jwt-analyst-username` | Demo analyst username |
+| `jwt-analyst-password` | Demo analyst password |
+| `jwt-viewer-username` | Demo viewer username |
+| `jwt-viewer-password` | Demo viewer password |
 
 Actual secret values are not documented and are not committed to GitHub.
 
@@ -95,7 +100,7 @@ The `Key Vault Secrets User` role allows the App Service to read secret values a
 
 Azure App Service environment variables use Key Vault references.
 
-The app setting names remain the same as before, but the values point to Key Vault secrets.
+The app setting names remain application-friendly, but the values point to Key Vault secrets.
 
 | App Service setting | Key Vault reference |
 |---|---|
@@ -103,9 +108,13 @@ The app setting names remain the same as before, but the values point to Key Vau
 | `AZURE_SQL_DATABASE` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-database)` |
 | `AZURE_SQL_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-username)` |
 | `AZURE_SQL_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-password)` |
-| `ADMIN_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=admin-api-key)` |
-| `ANALYST_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=analyst-api-key)` |
-| `VIEWER_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=viewer-api-key)` |
+| `JWT_SECRET_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-secret-key)` |
+| `JWT_ADMIN_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-admin-username)` |
+| `JWT_ADMIN_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-admin-password)` |
+| `JWT_ANALYST_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-analyst-username)` |
+| `JWT_ANALYST_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-analyst-password)` |
+| `JWT_VIEWER_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-viewer-username)` |
+| `JWT_VIEWER_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-viewer-password)` |
 
 These settings are configured in:
 
@@ -129,6 +138,8 @@ Some App Service settings are not sensitive and remain as plain values.
 | `APP_ENV` | `azure` |
 | `AZURE_SQL_DRIVER` | `ODBC Driver 18 for SQL Server` |
 | `WEBSITES_PORT` | `8000` |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
 
 ---
 
@@ -144,10 +155,10 @@ Example:
 
 ```text
 App Service setting:
-AZURE_SQL_PASSWORD=@Microsoft.KeyVault(...)
+JWT_SECRET_KEY=@Microsoft.KeyVault(...)
 
 Runtime environment variable seen by FastAPI:
-AZURE_SQL_PASSWORD=<resolved secret value>
+JWT_SECRET_KEY=<resolved secret value>
 ```
 
 This means the application code stays simple while the deployment becomes more secure.
@@ -162,9 +173,47 @@ This means the application code stays simple while the deployment becomes more s
 3. App Service resolves Key Vault references
 4. FastAPI reads environment variables
 5. API connects to Azure SQL Database
-6. API validates request API keys
-7. API returns business or operational response
+6. User authenticates through POST /auth/login
+7. API validates demo user credentials from resolved environment variables
+8. API returns a signed JWT access token
+9. Client sends Authorization: Bearer <access_token>
+10. API validates the JWT token and role permissions
+11. API returns business, operational, or insight response
 ```
+
+---
+
+## JWT Authentication Flow
+
+```text
+POST /auth/login
+        ↓
+Validate username and password
+        ↓
+Create JWT with username and role claims
+        ↓
+Return access token
+        ↓
+Client sends Authorization: Bearer <access_token>
+        ↓
+Protected route validates JWT
+        ↓
+RBAC dependency checks role permission
+        ↓
+Endpoint returns response
+```
+
+---
+
+## JWT Roles
+
+The API supports three demo JWT roles.
+
+| Role | Access Level |
+|---|---|
+| `admin` | Full access to executive, operations, insights, and admin-level endpoints |
+| `analyst` | Access to executive, operations, and insight endpoints |
+| `viewer` | Limited summary-level read access |
 
 ---
 
@@ -181,6 +230,9 @@ The script checks:
 - Public health endpoint
 - Protected executive summary endpoint
 - Protected operational alert summary endpoint
+- Key Vault references resolving correctly through App Service environment variables
+- Azure SQL connectivity through resolved SQL secrets
+- JWT authentication using resolved JWT credentials
 
 The verification report is written to:
 
@@ -190,10 +242,11 @@ data/processed/key_vault_setup_verification_report.csv
 
 A successful result confirms that:
 
-- The deployed API is still running.
+- The deployed API is running.
 - The API can connect to Azure SQL.
-- Protected endpoints still accept the admin API key.
-- Key Vault references are resolving correctly inside App Service.
+- JWT Key Vault references are resolving correctly inside App Service.
+- Protected endpoints accept valid JWT Bearer tokens.
+- RBAC restrictions are active.
 
 ---
 
@@ -211,7 +264,58 @@ The health endpoint should return:
 
 If `database_connected` is `true`, the Azure SQL secret references are working.
 
-If protected endpoints return HTTP 200 with the generated admin key, the API key secret reference is working.
+---
+
+## Expected JWT Login Response
+
+The login endpoint should return a JWT access token.
+
+Endpoint:
+
+```text
+POST /auth/login
+```
+
+Example successful response:
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "role": "admin",
+  "expires_in_minutes": 60
+}
+```
+
+If login succeeds using the credentials resolved from Key Vault, the JWT credential secret references are working.
+
+---
+
+## Example Protected Request
+
+After login, protected endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+PowerShell example:
+
+```powershell
+$loginResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/auth/login" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body "username=admin&password=<admin-password>"
+
+$headers = @{
+    "Authorization" = "Bearer $($loginResponse.access_token)"
+}
+
+Invoke-RestMethod `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/executive/summary" `
+  -Headers $headers
+```
 
 ---
 
@@ -244,14 +348,45 @@ Check:
 
 ---
 
-### Protected endpoints return 401 or 403
+### JWT login returns 401
 
 Check:
 
-- The request uses the correct header: `X-API-Key`.
-- The local `.env` contains the same generated admin key used in Key Vault.
-- The `ADMIN_API_KEY` App Service setting resolves correctly.
-- The App Service was restarted after changing the Key Vault reference.
+- The username matches the Key Vault value.
+- The password matches the Key Vault value.
+- The App Service setting points to the correct Key Vault secret.
+- The App Service managed identity can read the JWT credential secrets.
+- The App Service was restarted after adding or changing JWT Key Vault references.
+- The request uses `Content-Type: application/x-www-form-urlencoded`.
+- The login request is sent to `/auth/login`.
+
+---
+
+### Protected endpoints return 401
+
+Check:
+
+- The request includes the header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+- The token was copied correctly.
+- The token has not expired.
+- `JWT_SECRET_KEY` is resolving correctly from Key Vault.
+- The app was restarted after changing `JWT_SECRET_KEY`.
+
+---
+
+### Protected endpoints return 403
+
+Check:
+
+- The authenticated user role has permission for the endpoint.
+- `viewer` users only have limited summary-level read access.
+- `analyst` users do not have admin-only access.
+- `/insights/llm-context` requires the `admin` role.
 
 ---
 
@@ -260,34 +395,24 @@ Check:
 Current security improvements:
 
 - SQL password is no longer stored directly in App Service configuration.
-- API keys are no longer stored directly in App Service configuration.
+- JWT signing secret is stored in Azure Key Vault.
+- JWT demo user credentials are stored in Azure Key Vault.
 - App Service uses managed identity to access secrets.
 - Key Vault uses Azure RBAC permissions.
 - Real secrets are not committed to GitHub.
 - `.env.example` contains placeholders only.
+- Protected endpoints use JWT Bearer authentication with RBAC.
 
 Remaining limitations:
 
-- The API still uses API key authentication rather than OAuth or Entra ID authentication.
+- The API uses demo JWT users rather than a production identity provider.
+- The API does not use Microsoft Entra ID authentication.
+- Refresh tokens are not implemented.
+- User registration and password reset are not implemented.
 - The Azure SQL connection still uses SQL username/password, now stored in Key Vault.
 - Secret rotation is not automated.
-- Full monitoring and alerting will be added in a later phase.
 
----
-
-## Interview Explanation
-
-Simple explanation:
-
-```text
-I added Azure Key Vault so sensitive values are no longer stored directly in the App Service configuration. The FastAPI App Service uses managed identity to read secrets from Key Vault through Key Vault references. This keeps the Python code simple because App Service resolves the secrets into environment variables at runtime.
-```
-
-Technical explanation:
-
-```text
-I configured Azure Key Vault using the Azure RBAC permission model. My developer account has Key Vault Secrets Officer permission to manage secrets, while the App Service system-assigned managed identity has Key Vault Secrets User permission to read them. App Service application settings use @Microsoft.KeyVault references for SQL credentials and API keys. The FastAPI container receives the resolved values as environment variables and connects to Azure SQL Database in APP_ENV=azure mode.
-```
+These limitations are intentional for this portfolio project because the goal is to demonstrate production-style cloud security patterns without overcomplicating the system.
 
 ---
 
@@ -308,7 +433,7 @@ Azure Key Vault
         ↓
 Azure App Service FastAPI API
         ↓
-Authenticated business, operational, and insight endpoints
+JWT-protected business, operational, and insight endpoints
 ```
 
-This phase demonstrates secure secret management, managed identity usage, and cloud runtime configuration.
+This phase demonstrates secure secret management, managed identity usage, JWT-based API authentication, role-based authorization, and cloud runtime configuration.

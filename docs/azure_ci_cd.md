@@ -291,7 +291,7 @@ scripts/verify_key_vault_setup.py
 scripts/verify_azure_monitoring_setup.py
 ```
 
-This avoids storing admin API keys in GitHub Actions secrets just for deployment smoke testing.
+This avoids storing JWT user credentials or access tokens in GitHub Actions secrets just for deployment smoke testing.
 
 ---
 
@@ -376,20 +376,4 @@ This allows the project to be described accurately as:
 
 ```text
 GitHub Actions CI/CD with Docker-based deployment to Azure App Service.
-```
-
----
-
-## Interview Explanation
-
-Simple explanation:
-
-```text
-I added GitHub Actions CI/CD to automate deployment of the FastAPI container. When I push to main, CI validates the project and CD builds the Docker image, pushes it to Azure Container Registry, updates Azure App Service, restarts the app, and verifies the /health/ endpoint.
-```
-
-Technical explanation:
-
-```text
-The CD workflow logs in to Azure using a service principal stored in GitHub Secrets. It builds the Docker image, tags it as latest and with the Git commit SHA, pushes both tags to Azure Container Registry, ensures the App Service managed identity has AcrPull permission, configures App Service to use managed identity for ACR pulls, updates the container image, restarts the Web App, and verifies the deployed /health/ endpoint with retry logic.
 ```

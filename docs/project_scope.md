@@ -239,12 +239,3 @@ The following are outside the current scope:
 * Advanced deep learning forecasting
 * Live connection to Olist systems
 
----
-
-## Final Project Positioning
-
-This project should be presented as:
-
-**An end-to-end e-commerce data engineering platform with operational anomaly detection and AI-powered business insights.**
-
-It should not be presented as a simple dashboard project. The main value is the full data platform: ingestion, validation, staging, warehouse, KPI views, anomaly detection, API, AI, and cloud deployment.

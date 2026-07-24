@@ -711,13 +711,15 @@ The local Docker container includes:
 |---|---|
 | `src/` | FastAPI application code and supporting Python modules |
 | `requirements.txt` | Python dependencies required by the API |
-| `.env.example` | Example environment variables and demo API keys |
-| API routes | Executive, operations, insights, and health endpoints |
-| Authentication logic | API-key authentication and role-based access control |
+| `.env.example` | Example environment variables for local and cloud runtime configuration |
+| API routes | Authentication, executive, operations, insights, and health endpoints |
+| Authentication logic | JWT Bearer authentication and role-based access control |
 | Logging configuration | API request logging and error logging |
 | Health checks | Basic and system-level API health endpoints |
 
-The SQLite database is not copied into the image. It is mounted at runtime from the local project folder.
+The SQLite database is not copied into the image. It is mounted at runtime from the local project folder for local Docker testing.
+
+In Azure App Service, the container connects to Azure SQL Database instead of using the local SQLite database.
 
 ### Local Docker Flow
 
@@ -765,13 +767,17 @@ Curated warehouse, KPI, operational, and insight data
 
 ### Local and Cloud Difference
 
-| Area | Local Docker Version | Future Azure Version |
+| Area | Local Development Version | Azure Cloud Version |
 |---|---|---|
-| API hosting | Docker Desktop | Azure App Service or container hosting |
-| Database | SQLite database mounted at runtime | Azure SQL Database |
-| Secrets | Demo API keys for local testing | Azure Key Vault |
-| Monitoring | Local logs | Azure Monitor |
-| Deployment | Manual Docker commands | GitHub Actions CI/CD and Azure deployment |
+| API hosting | Uvicorn / Docker Desktop | Azure App Service for Containers |
+| Database | SQLite database for local development | Azure SQL Database |
+| Raw data storage | Local CSV files | Azure Blob Storage |
+| Orchestration | Local Python scripts | Azure Data Factory copy pipeline |
+| Secrets | Local `.env` file excluded from Git | Azure Key Vault with App Service Key Vault references |
+| Authentication | JWT Bearer authentication with demo users | JWT Bearer authentication with credentials stored in Key Vault |
+| Authorization | Role-based access control | Role-based access control |
+| Monitoring | Local logs and test scripts | Application Insights availability test and Azure Monitor alert rule |
+| Deployment | Manual local Docker commands | GitHub Actions CI/CD to ACR and Azure App Service |
 
 ### Architecture Benefit
 
@@ -989,7 +995,7 @@ Azure SQL Database
 | Azure App Service | Runs the API container and exposes HTTPS endpoints |
 | Azure SQL Database | Provides the deployed API data backend |
 | Managed Identity | Allows secure image pull from ACR |
-| Environment Variables | Configure runtime mode, SQL connection, and API keys |
+| Environment Variables | Configure runtime mode, SQL connection, JWT settings, and Key Vault references |
 
 ### Runtime Design
 
@@ -1057,10 +1063,12 @@ FastAPI application
 
 | Component | Responsibility |
 |---|---|
-| Azure Key Vault | Stores SQL credentials and API keys |
+| Azure Key Vault | Stores Azure SQL credentials, JWT signing secret, and JWT demo user credentials |
 | App Service managed identity | Authenticates App Service to Key Vault |
 | App Service Key Vault references | Inject secrets into runtime environment variables |
 | FastAPI application | Reads resolved values as normal environment variables |
+| JWT authentication layer | Creates and validates signed Bearer tokens |
+| RBAC dependency layer | Checks `admin`, `analyst`, and `viewer` permissions for protected endpoints |
 | Azure SQL Database | Receives authenticated database connection |
 
 ### Why This Matters
@@ -1243,7 +1251,7 @@ Application Insights Monitoring
 | Warehouse | SQLite locally, Azure SQL in cloud | Store curated dimensions, facts, KPIs, and operational outputs |
 | Operational intelligence | SQL, Python | Generate operational metrics and anomaly alerts |
 | API | FastAPI | Serve curated metrics and insights as JSON |
-| Security | API keys, RBAC, Azure Key Vault | Protect endpoints and secrets |
+| Security | JWT authentication, RBAC, Azure Key Vault | Protect endpoints, manage role-based access, and secure secrets |
 | Containerization | Docker | Package the API for deployment |
 | Image registry | Azure Container Registry | Store deployable API image |
 | Hosting | Azure App Service | Run the FastAPI container in Azure |
@@ -1294,10 +1302,14 @@ Automated tests
 | Azure Blob for raw files | Provides a cloud raw data landing zone |
 | Azure Data Factory for orchestration | Demonstrates Azure-native data movement |
 | FastAPI for serving | Lightweight API layer for analytical outputs |
+| JWT Bearer authentication for API security | Provides token-based authentication with role-based access control |
+| Admin, Analyst, and Viewer roles | Demonstrates role-based authorization for different user access levels |
 | Docker for deployment | Makes the API portable and cloud deployable |
 | Azure App Service for hosting | Provides managed container hosting without Kubernetes complexity |
-| Azure Key Vault for secrets | Keeps SQL credentials and API keys out of source code and plain app settings |
+| Azure Key Vault for secrets | Keeps SQL credentials, JWT signing secret, and demo user credentials out of source code and plain app settings |
+| Managed identity for ACR image pull | Allows Azure App Service to pull private Docker images from ACR without storing registry credentials |
 | Application Insights for monitoring | Provides external availability testing and alerting |
+| GitHub Actions CI/CD | Automates validation, Docker image build, ACR push, App Service deployment, and health verification |
 | Power BI deferred to final phase | Keeps dashboarding as the presentation layer after engineering completion |
 
 ## GitHub Actions CI/CD Architecture

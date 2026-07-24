@@ -76,7 +76,7 @@ pip install -r requirements.txt
 
 ## Environment Variables
 
-The project uses demo API keys for local testing.
+The project uses local environment variables for database settings and JWT authentication.
 
 Create a local `.env` file from `.env.example` if needed:
 
@@ -84,15 +84,85 @@ Create a local `.env` file from `.env.example` if needed:
 copy .env.example .env
 ```
 
-The demo API keys are:
+The `.env` file should contain runtime settings for local development, including:
 
-| Role | Demo Key |
+```env
+APP_ENV=local
+
+JWT_SECRET_KEY=your-generated-jwt-secret
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+JWT_ADMIN_USERNAME=admin
+JWT_ADMIN_PASSWORD=your-admin-password
+
+JWT_ANALYST_USERNAME=analyst
+JWT_ANALYST_PASSWORD=your-analyst-password
+
+JWT_VIEWER_USERNAME=viewer
+JWT_VIEWER_PASSWORD=your-viewer-password
+```
+
+Generate strong local JWT values with:
+
+```powershell
+python -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(64)); print('JWT_ADMIN_PASSWORD=' + secrets.token_urlsafe(24)); print('JWT_ANALYST_PASSWORD=' + secrets.token_urlsafe(24)); print('JWT_VIEWER_PASSWORD=' + secrets.token_urlsafe(24))"
+```
+
+The API supports three demo JWT users:
+
+| Role | Username | Access Level |
+|---|---|---|
+| Admin | `admin` | Full API access |
+| Analyst | `analyst` | Executive, operational, and insight read access |
+| Viewer | `viewer` | Limited summary-level read access |
+
+Do not commit `.env`, JWT secrets, passwords, database credentials, or connection strings to GitHub.
+
+## JWT Authentication Setup
+
+The API uses JWT Bearer authentication with role-based access control.
+
+Authentication flow:
+
+```text
+POST /auth/login
+        ↓
+JWT access token returned
+        ↓
+Authorization: Bearer <access_token>
+        ↓
+Protected endpoint access
+```
+
+Role access summary:
+
+| Role | Access |
 |---|---|
-| Admin | `admin-demo-key` |
-| Analyst | `analyst-demo-key` |
-| Viewer | `viewer-demo-key` |
+| `admin` | Full access to executive, operations, insights, and admin-level endpoints |
+| `analyst` | Executive, operations, and insight access |
+| `viewer` | Limited summary-level read access |
 
-The `.env` file should not be committed to GitHub.
+Local JWT test:
+
+```powershell
+$loginResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:8000/auth/login" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body "username=viewer&password=<viewer-password>"
+
+$headers = @{
+    "Authorization" = "Bearer $($loginResponse.access_token)"
+}
+
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:8000/executive/summary" `
+  -Headers $headers
+```
+
+The `/health/` endpoint remains public for monitoring and CI/CD smoke testing.
+
 
 ## Local Database
 
@@ -139,6 +209,7 @@ data/processed/automated_test_run_summary.csv
 Start the FastAPI API without Docker:
 
 ```powershell
+$env:APP_ENV="local"
 uvicorn src.api.main:app --reload
 ```
 
@@ -148,7 +219,7 @@ Open Swagger UI:
 http://127.0.0.1:8000/docs
 ```
 
-Useful local API endpoints:
+Useful public local API endpoints:
 
 ```text
 /
@@ -162,7 +233,47 @@ Useful local API endpoints:
 /health/status
 ```
 
-Protected endpoints require the `X-API-Key` header.
+JWT authentication endpoints:
+
+```text
+/auth/login
+```
+
+```text
+/auth/me
+```
+
+Protected endpoints require JWT Bearer authentication.
+
+Login through Swagger using:
+
+```text
+POST /auth/login
+```
+
+Then authorize protected requests with:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Example local PowerShell test:
+
+```powershell
+$loginResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:8000/auth/login" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body "username=admin&password=<admin-password>"
+
+$headers = @{
+    "Authorization" = "Bearer $($loginResponse.access_token)"
+}
+
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:8000/executive/summary" `
+  -Headers $headers
+```
 
 ## Running the API with Docker
 
@@ -585,22 +696,35 @@ Go to:
 App Service → Settings → Environment variables → App settings
 ```
 
-Add:
+Add the required non-secret runtime settings:
 
 ```text
 APP_ENV=azure
-AZURE_SQL_SERVER=<your-server-name>.database.windows.net
-AZURE_SQL_DATABASE=sqldb-ecommerce-retail-intelligence
-AZURE_SQL_USERNAME=<your-sql-username>
-AZURE_SQL_PASSWORD=<your-sql-password>
 AZURE_SQL_DRIVER=ODBC Driver 18 for SQL Server
-ADMIN_API_KEY=admin-demo-key
-ANALYST_API_KEY=analyst-demo-key
-VIEWER_API_KEY=viewer-demo-key
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
 WEBSITES_PORT=8000
 ```
 
-Save and restart the Web App.
+Sensitive values should be configured later as Azure Key Vault references:
+
+```text
+AZURE_SQL_SERVER
+AZURE_SQL_DATABASE
+AZURE_SQL_USERNAME
+AZURE_SQL_PASSWORD
+JWT_SECRET_KEY
+JWT_ADMIN_USERNAME
+JWT_ADMIN_PASSWORD
+JWT_ANALYST_USERNAME
+JWT_ANALYST_PASSWORD
+JWT_VIEWER_USERNAME
+JWT_VIEWER_PASSWORD
+```
+
+Save and restart the Web App after settings are added.
+
+For the final deployed project, SQL credentials, JWT signing secret, and demo JWT user credentials are stored in Azure Key Vault rather than directly in App Service configuration.
 
 ---
 
@@ -681,9 +805,27 @@ Create these secrets in Key Vault:
 | `azure-sql-database` | Azure SQL Database name |
 | `azure-sql-username` | Azure SQL username |
 | `azure-sql-password` | Azure SQL password |
-| `admin-api-key` | Admin API key |
-| `analyst-api-key` | Analyst API key |
-| `viewer-api-key` | Viewer API key |
+| `jwt-secret-key` | JWT signing secret |
+| `jwt-admin-username` | Demo admin username |
+| `jwt-admin-password` | Demo admin password |
+| `jwt-analyst-username` | Demo analyst username |
+| `jwt-analyst-password` | Demo analyst password |
+| `jwt-viewer-username` | Demo viewer username |
+| `jwt-viewer-password` | Demo viewer password |
+
+Recommended username values:
+
+| Secret name | Value |
+|---|---|
+| `jwt-admin-username` | `admin` |
+| `jwt-analyst-username` | `analyst` |
+| `jwt-viewer-username` | `viewer` |
+
+Generate strong JWT secret and password values locally with:
+
+```powershell
+python -c "import secrets; print('jwt-secret-key=' + secrets.token_urlsafe(64)); print('jwt-admin-password=' + secrets.token_urlsafe(24)); print('jwt-analyst-password=' + secrets.token_urlsafe(24)); print('jwt-viewer-password=' + secrets.token_urlsafe(24))"
+```
 
 For each secret:
 
@@ -735,9 +877,13 @@ Use these references:
 | `AZURE_SQL_DATABASE` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-database)` |
 | `AZURE_SQL_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-username)` |
 | `AZURE_SQL_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-password)` |
-| `ADMIN_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=admin-api-key)` |
-| `ANALYST_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=analyst-api-key)` |
-| `VIEWER_API_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=viewer-api-key)` |
+| `JWT_SECRET_KEY` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-secret-key)` |
+| `JWT_ADMIN_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-admin-username)` |
+| `JWT_ADMIN_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-admin-password)` |
+| `JWT_ANALYST_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-analyst-username)` |
+| `JWT_ANALYST_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-analyst-password)` |
+| `JWT_VIEWER_USERNAME` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-viewer-username)` |
+| `JWT_VIEWER_PASSWORD` | `@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-viewer-password)` |
 
 Keep these non-secret settings as plain values:
 
@@ -745,7 +891,11 @@ Keep these non-secret settings as plain values:
 |---|---|
 | `APP_ENV` | `azure` |
 | `AZURE_SQL_DRIVER` | `ODBC Driver 18 for SQL Server` |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
 | `WEBSITES_PORT` | `8000` |
+
+After saving, confirm that Key Vault references show as resolved in App Service configuration.
 
 ---
 
@@ -857,11 +1007,9 @@ Confirm that request or container activity appears in Log Stream.
 
 ### 3. Built-in Health Check Note
 
-The built-in App Service Health Check feature was skipped because the deployed app uses the Free App Service plan.
+The project uses Application Insights availability testing for the `/health/` endpoint.
 
-The Azure Portal requires Basic B1 or higher for built-in Health Check.
-
-The project uses Application Insights availability testing instead.
+Built-in App Service Health Check can also be enabled on Basic B1 or higher App Service plans, but Application Insights availability testing remains the documented monitoring approach for this portfolio project.
 
 ---
 

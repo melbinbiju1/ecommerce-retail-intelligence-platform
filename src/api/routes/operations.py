@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Depends, Query
 
 from src.api.database import fetch_one, fetch_all
+from src.api.dependencies import require_operations_access
 from src.api.schemas import APIResponse
-from src.api.auth import require_roles
 
 
 router = APIRouter(prefix="/operations", tags=["Operations"])
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/operations", tags=["Operations"])
 
 @router.get("/alert-summary", response_model=APIResponse)
 def get_alert_summary(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -27,7 +27,7 @@ def get_alert_summary(
 
 @router.get("/alerts-by-type", response_model=APIResponse)
 def get_alerts_by_type(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -45,7 +45,7 @@ def get_alerts_by_type(
 
 @router.get("/alerts-by-severity", response_model=APIResponse)
 def get_alerts_by_severity(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -64,7 +64,7 @@ def get_alerts_by_severity(
 @router.get("/recent-alerts", response_model=APIResponse)
 def get_recent_alerts(
     limit: int = Query(default=20, ge=1, le=100),
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -83,7 +83,7 @@ def get_recent_alerts(
 @router.get("/high-risk-sellers", response_model=APIResponse)
 def get_high_risk_sellers(
     limit: int = Query(default=20, ge=1, le=100),
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -109,7 +109,7 @@ def get_high_risk_sellers(
 @router.get("/high-risk-categories", response_model=APIResponse)
 def get_high_risk_categories(
     limit: int = Query(default=20, ge=1, le=100),
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -134,7 +134,7 @@ def get_high_risk_categories(
 
 @router.get("/risk-summary", response_model=APIResponse)
 def get_risk_summary(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_operations_access),
 ) -> APIResponse:
     query = """
     SELECT *

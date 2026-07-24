@@ -19,7 +19,7 @@ The deployed API connects to Azure SQL Database, not the local SQLite database.
 | Container registry | Azure Container Registry |
 | Cloud hosting | Azure App Service for Containers |
 | Database backend | Azure SQL Database |
-| Authentication | API key based RBAC |
+| Authentication | JWT Bearer authentication with role-based access control |
 | Runtime mode | `APP_ENV=azure` |
 | Public access | HTTPS Azure App Service URL |
 
@@ -47,7 +47,9 @@ The deployment separates the application layer from the data layer:
 - The Docker image does not contain the local SQLite database.
 - Azure SQL Database stores the curated warehouse tables and API serving objects.
 - Azure App Service runs the container and exposes the API over HTTPS.
-- App Service environment variables control database connection settings and API keys.
+- App Service environment variables control runtime configuration, database connection settings, JWT configuration, and Key Vault references.
+- Sensitive values such as SQL credentials, JWT signing secret, and demo JWT user credentials are stored in Azure Key Vault and resolved by Azure App Service at runtime.
+- Non-sensitive settings such as `APP_ENV`, `WEBSITES_PORT`, `JWT_ALGORITHM`, and `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` are stored as plain App Service settings.
 
 ---
 
@@ -199,9 +201,15 @@ Required settings:
 | `AZURE_SQL_USERNAME` | Azure SQL login username |
 | `AZURE_SQL_PASSWORD` | Azure SQL login password |
 | `AZURE_SQL_DRIVER` | ODBC driver used by SQLAlchemy and pyodbc |
-| `ADMIN_API_KEY` | Admin API key for protected API endpoints |
-| `ANALYST_API_KEY` | Analyst API key for protected API endpoints |
-| `VIEWER_API_KEY` | Viewer API key for protected API endpoints |
+| `JWT_SECRET_KEY` | Secret key used to sign JWT access tokens |
+| `JWT_ALGORITHM` | JWT signing algorithm, default `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token expiry in minutes |
+| `JWT_ADMIN_USERNAME` | Demo admin username |
+| `JWT_ADMIN_PASSWORD` | Demo admin password |
+| `JWT_ANALYST_USERNAME` | Demo analyst username |
+| `JWT_ANALYST_PASSWORD` | Demo analyst password |
+| `JWT_VIEWER_USERNAME` | Demo viewer username |
+| `JWT_VIEWER_PASSWORD` | Demo viewer password |
 | `WEBSITES_PORT` | Container port used by Azure App Service |
 
 The deployed value for runtime mode is:
@@ -276,7 +284,7 @@ This ensures the deployed API can serve the same routes as the local API.
 
 ## Public API Endpoints
 
-These endpoints are available without an API key:
+These endpoints are available without JWT authentication:
 
 | Endpoint | Purpose |
 |---|---|
@@ -284,28 +292,53 @@ These endpoints are available without an API key:
 | `/health/` | API and database health check |
 | `/docs` | Swagger API documentation |
 | `/openapi.json` | OpenAPI schema |
+| `/auth/login` | Authenticates a demo user and returns a JWT access token |
 
-Example:
+The `/auth/me` endpoint is not public because it requires a valid JWT token.
+
+Example public health endpoint:
 
 ```text
-https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+https://<your-azure-app-service-url>/health/
 ```
 
 ---
 
 ## Protected API Endpoints
 
-Protected endpoints require an API key in the request header:
+Protected endpoints require JWT Bearer authentication.
+
+Requests must include the JWT access token in the `Authorization` header:
 
 ```text
-X-API-Key: admin-demo-key
+Authorization: Bearer <access_token>
 ```
 
-Example PowerShell request:
+The access token is returned by the login endpoint:
+
+```text
+POST /auth/login
+```
+
+---
+
+### Example PowerShell Login Request
+
+```powershell
+$loginResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/auth/login" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body "username=admin&password=<admin-password>"
+```
+
+---
+
+### Example Protected PowerShell Request
 
 ```powershell
 $headers = @{
-    "X-API-Key" = "admin-demo-key"
+    "Authorization" = "Bearer $($loginResponse.access_token)"
 }
 
 Invoke-RestMethod `
@@ -313,10 +346,13 @@ Invoke-RestMethod `
   -Headers $headers
 ```
 
-Example protected endpoints:
+---
+
+### Example Protected Endpoints
 
 | Endpoint | Purpose |
 |---|---|
+| `/auth/me` | Current authenticated JWT user and role |
 | `/executive/summary` | Executive KPI summary |
 | `/executive/monthly-sales` | Monthly sales trends |
 | `/executive/top-products` | Top product categories |
@@ -386,18 +422,30 @@ If `database_connected` is `false`, common causes include:
 Current security controls:
 
 - `.env` file is not committed to GitHub.
-- Runtime secrets are stored as App Service environment variables.
-- API endpoints are protected using API keys.
+- Local runtime secrets are stored in the local `.env` file only.
+- Azure runtime secrets are stored in Azure Key Vault.
+- Azure App Service reads secrets using Key Vault references.
+- The API uses JWT Bearer authentication for protected endpoints.
 - Role-based API access is implemented for Admin, Analyst, and Viewer users.
-- ACR image pull uses managed identity with `AcrPull` role.
+- JWT signing secret and demo user credentials are stored in Azure Key Vault.
+- SQL credentials are stored in Azure Key Vault.
+- ACR image pull uses App Service managed identity with the `AcrPull` role.
+- CI/CD deployment values are stored in GitHub repository secrets.
 
 Current limitations:
 
-- API keys are still stored directly as App Service environment variables.
-- SQL username/password are still stored as App Service environment variables.
-- Key Vault integration is not yet implemented.
+- The project uses demo JWT users rather than a production identity provider.
+- User registration, password reset, refresh tokens, and external OAuth login are not implemented.
+- The API does not use Microsoft Entra ID authentication.
+- The project is designed as a production-style portfolio implementation, not a full enterprise identity platform.
 
-The next security improvement is Azure Key Vault integration.
+Future security improvements could include:
+
+- Microsoft Entra ID integration.
+- Refresh token flow.
+- Database-backed user management.
+- Password hashing for persisted user records.
+- More granular endpoint-level permissions.
 
 ---
 
@@ -463,10 +511,11 @@ on the Azure Container Registry.
 
 Check:
 
-- API key header is included.
-- Correct header name is used: `X-API-Key`.
-- The correct role key is used.
-- App Service environment variables contain the API keys.
+- A valid JWT access token was generated using `/auth/login`.
+- The request includes the correct header:
+
+```text
+Authorization: Bearer <access_token>
 
 ---
 
@@ -479,22 +528,6 @@ python scripts\migrate_api_serving_views_to_azure_sql.py
 ```
 
 Then restart the Web App.
-
----
-
-## Interview Explanation
-
-A concise explanation for interviews:
-
-```text
-I containerized the FastAPI backend with Docker and deployed it to Azure App Service for Containers. The image is stored in Azure Container Registry, and the App Service pulls the image using managed identity with AcrPull permissions. The deployed API runs in Azure SQL mode using App Service environment variables, so the cloud API connects to Azure SQL Database instead of the local SQLite database. I verified the deployment using health checks and authenticated business endpoints.
-```
-
-A more technical explanation:
-
-```text
-The deployment follows a container-based architecture. I build the FastAPI application into a Docker image, push it to Azure Container Registry, and host it on Azure App Service as a Linux container. Runtime configuration is injected through App Service environment variables, including APP_ENV=azure, SQL Server connection settings, and API keys. The API uses SQLAlchemy and pyodbc with Microsoft ODBC Driver 18 to connect to Azure SQL Database. The Web App uses a system-assigned managed identity with AcrPull permission to securely pull the image from ACR.
-```
 
 ---
 

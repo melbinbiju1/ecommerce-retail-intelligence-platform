@@ -2,13 +2,13 @@
 
 ## Project Name
 
-E-Commerce Retail Intelligence Platform with Operational Anomaly Detection and AI Business Insights
+E-Commerce Retail Intelligence Platform with Operational Anomaly Detection and AI-Ready Business Insights
 
 ## Purpose
 
-This document explains how data is managed, validated, documented, and protected in this project.
+This document explains how data is managed, validated, documented, protected, deployed, monitored, and verified in this project.
 
-The project uses the Olist Brazilian E-Commerce dataset to simulate a real e-commerce data platform. The goal is to create trusted business data for reporting, operational anomaly detection, API access, and AI-generated business insights.
+The project uses the Olist Brazilian E-Commerce dataset to simulate a cloud data engineering and analytics engineering platform. The goal is to create trusted business data for reporting, operational anomaly detection, secured API access, and AI-ready business insights.
 
 ---
 
@@ -65,7 +65,7 @@ The dataset is anonymised and does not contain direct personal identifiers such 
 | Location state/city | Aggregated geography |
 | Payment values | Business transaction data |
 
-The project does not store real customer names, emails, phone numbers, or payment card details.
+The project does not store real customer names, emails, phone numbers, payment card numbers, or personal addresses.
 
 ---
 
@@ -93,43 +93,95 @@ Output:
 data/processed/raw_data_quality_results.csv
 ```
 
+### Transformation and Warehouse Quality Controls
 
-## API Access Governance
+The transformation layer applies controlled staging, warehouse modelling, and dbt validation.
 
-The FastAPI backend includes simple API-key based authentication and role-based access control.
+Quality controls include:
 
-| Role | Access Level |
-|---|---|
-| Admin | Full API access |
-| Analyst | Executive and operational read access |
-| Viewer | Limited executive read access |
-
-Protected endpoints require the `X-API-Key` request header.
-
-Viewer users can access only high-level executive endpoints. Analyst users can access executive and operational read endpoints. Admin users can access all current endpoints.
-
-The local version uses demo API keys for portfolio demonstration. In the Azure version, secrets will be stored in Azure Key Vault and access will be managed using a stronger production authentication mechanism.
-
-## API Monitoring and Error Governance
-
-The FastAPI backend includes request logging, error logging, and health check endpoints.
-
-API logs are stored in:
-
-`logs/api.log`
-
-The `/health/` endpoint checks database connectivity.
-
-The `/health/status` endpoint checks whether important warehouse, KPI, operational, and AI-ready source objects are available.
-
-The API uses centralised error handling so unexpected errors are logged but internal stack traces are not exposed to API users.
-
-In the Azure version, these logs and health signals will be connected to Azure Monitor.
-
+- Consistent staging table structure
+- Fact and dimension modelling
+- Primary key and relationship checks
+- Not-null checks on important fields
+- Accepted value checks where applicable
+- KPI view validation
+- Operational anomaly output validation
 
 ---
 
-## Automated Testing Governance
+## 5. API Access Governance
+
+The FastAPI backend uses JWT Bearer authentication with role-based access control.
+
+Users authenticate through:
+
+```text
+POST /auth/login
+```
+
+The login endpoint returns a signed JWT access token. Protected endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+The API supports three demo roles:
+
+| Role | Access Level |
+|---|---|
+| `admin` | Full access to executive, operations, insights, and admin-level endpoints |
+| `analyst` | Access to executive, operations, and insight endpoints |
+| `viewer` | Limited summary-level read access |
+
+The public root, health, Swagger, OpenAPI, and login endpoints remain accessible without JWT authentication so that the API can be discovered, monitored, and tested.
+
+### Authentication Endpoints
+
+| Endpoint | Method | Governance Purpose |
+|---|---|---|
+| `/auth/login` | POST | Authenticates a demo user and returns a JWT access token |
+| `/auth/me` | GET | Returns the authenticated user's username and role |
+
+### Role Access Governance
+
+| Endpoint Group | Admin | Analyst | Viewer |
+|---|---:|---:|---:|
+| Public root and health endpoints | Yes | Yes | Yes |
+| Authentication login endpoint | Yes | Yes | Yes |
+| Executive summary endpoints | Yes | Yes | Yes |
+| Detailed executive endpoints | Yes | Yes | No |
+| Operations endpoints | Yes | Yes | No |
+| AI-ready summary insight endpoint | Yes | Yes | Yes |
+| Detailed AI-ready insight endpoints | Yes | Yes | No |
+| LLM context endpoint | Yes | No | No |
+
+JWT signing secrets and demo user credentials are stored in local `.env` for local development and in Azure Key Vault for the deployed Azure App Service.
+
+The real `.env` file is excluded from Git and must not be committed.
+
+---
+
+## 6. API Monitoring and Error Governance
+
+The FastAPI backend includes request logging, error logging, and health check endpoints.
+
+API logs are stored locally in:
+
+```text
+logs/api.log
+```
+
+The `/health/` endpoint checks API availability and database connectivity.
+
+The `/health/status` endpoint checks whether important warehouse, KPI, operational, and AI-ready source objects are available.
+
+The API uses centralised error handling so unexpected errors are logged while internal stack traces are not exposed to API users.
+
+In Azure, health and availability signals are monitored using Application Insights and Azure Monitor.
+
+---
+
+## 7. Automated Testing Governance
 
 The project includes automated tests to improve reliability and reduce the risk of silent failures.
 
@@ -140,33 +192,39 @@ The test suite is organised into unit, API, and integration tests.
 | Test Category | Purpose |
 |---|---|
 | Unit tests | Validate individual components such as database helpers and AI-ready insight generation |
-| API tests | Validate FastAPI endpoints, authentication, RBAC access rules, and response structure |
+| API tests | Validate FastAPI endpoints, JWT authentication, RBAC access rules, and response structure |
 | Integration tests | Validate that important generated pipeline outputs exist |
+| Cloud verification scripts | Validate Azure Blob, Azure SQL, ADF, App Service, Key Vault, monitoring, and deployment setup |
 
 ### Tested Areas
 
 The automated tests validate:
 
-- Database connectivity
+- Database helper behaviour
 - Important warehouse, KPI, and operational database objects
 - Public health endpoints
 - Protected API endpoints
-- API-key authentication
+- JWT login and token validation
 - Role-based access control
 - AI-ready business insight endpoints
 - LLM context generation
 - Important pipeline output files
+- Docker setup
+- CI setup
 
 ### Test Execution
 
 The test suite can be executed using:
 
 ```powershell
-pytest tests -v
+python -m pytest
 ```
 
+Live Azure SQL tests are skipped by default during normal local pytest runs and can be enabled explicitly when Azure SQL is online.
 
-## Docker and Deployment Governance
+---
+
+## 8. Docker and Deployment Governance
 
 The project includes Docker containerisation for the FastAPI backend.
 
@@ -199,43 +257,17 @@ This keeps the image smaller and separates application code from runtime data.
 
 ### Production-Style Governance Note
 
-In a production-style cloud version, the database should not be copied into the application image.
+In the cloud version, the database is not copied into the application image.
 
-Instead, the API should connect to a managed database service such as Azure SQL Database.
+Instead, the deployed API connects to Azure SQL Database.
 
 This keeps the application layer and data storage layer separated.
 
-### Security Notes
-
-The local Docker version uses demo API keys for testing:
-
-| Role | Demo Key |
-|---|---|
-| Admin | `admin-demo-key` |
-| Analyst | `analyst-demo-key` |
-| Viewer | `viewer-demo-key` |
-
-These keys are suitable only for local demonstration.
-
-In the Azure version, secrets should be stored in Azure Key Vault instead of being hardcoded or stored directly in the application image.
-
-### Access Governance
-
-The same API access rules apply inside the Docker container:
-
-| Area | Governance Rule |
-|---|---|
-| Public endpoints | Health and root endpoints remain publicly accessible |
-| Protected endpoints | Require `X-API-Key` authentication |
-| Admin endpoints | Require admin-level access |
-| Analyst endpoints | Available to analyst and admin roles |
-| Viewer endpoints | Limited to selected read-only executive and insight endpoints |
-
-### Deployment Governance
+### Container Access Governance
 
 The containerised API keeps the same governance controls as the local Python version:
 
-- API-key authentication remains active
+- JWT Bearer authentication remains active
 - Role-based access control remains active
 - Health checks remain available
 - Logging remains enabled
@@ -244,97 +276,89 @@ The containerised API keeps the same governance controls as the local Python ver
 
 ### Local vs Cloud Governance
 
-| Area | Local Docker Version | Future Azure Version |
+| Area | Local Docker Version | Azure Version |
 |---|---|---|
 | Database | SQLite file mounted into container at runtime | Azure SQL Database |
-| Secrets | Demo API keys | Azure Key Vault |
-| Hosting | Docker Desktop | Azure App Service or container hosting |
-| Monitoring | Local logs | Azure Monitor |
-| Deployment | Manual Docker commands | CI/CD pipeline |
-| Runtime environment | Local Docker image | Cloud-hosted container or app service |
+| Secrets | Local `.env` file | Azure Key Vault references |
+| Authentication | JWT Bearer authentication | JWT Bearer authentication |
+| Hosting | Docker Desktop | Azure App Service for Containers |
+| Monitoring | Local logs | Application Insights and Azure Monitor |
+| Deployment | Manual Docker commands | GitHub Actions CI/CD |
+| Runtime environment | Local Docker image | Cloud-hosted Linux container |
 
 ### Governance Outcome
 
-This Docker phase prepares the project for future CI/CD and Azure deployment phases.
+The Docker layer shows that the API can be packaged, tested, and executed in a controlled runtime environment without embedding large local data files or secrets into the application image.
 
-It shows that the API can be packaged, tested, and executed in a controlled runtime environment without embedding large local data files into the application image.
+---
 
+## 9. CI/CD Governance
 
-## CI Governance
+The project includes GitHub Actions CI/CD governance to make validation and deployment more controlled and repeatable.
 
-The project includes a GitHub Actions CI pipeline to improve reliability and reduce the risk of broken code being pushed or merged.
+CI/CD governance ensures that the application is not deployed only through manual local commands. Instead, code changes pushed to GitHub trigger automated validation and deployment workflows.
 
-### CI Governance Controls
+### CI/CD Governance Flow
+
+```text
+Code pushed to GitHub
+        ↓
+CI pipeline validates project
+        ↓
+CD pipeline builds Docker image
+        ↓
+Image pushed to Azure Container Registry
+        ↓
+Azure App Service updated
+        ↓
+Deployment health check verifies /health/
+```
+
+### CI Controls
 
 | Control | Purpose |
 |---|---|
-| Automated workflow | Runs validation checks automatically on GitHub |
+| Dependency installation | Confirms the project can install in a clean environment |
+| Python syntax validation | Confirms source and script files compile |
+| Import validation | Confirms key application modules can be imported |
+| Docker setup verification | Confirms Docker-related files and configuration exist |
+| CI setup verification | Confirms CI configuration is present and valid |
+| Docker image build | Confirms the API image can be built successfully |
 | Database tracking check | Prevents the large local SQLite database from being committed |
-| Dependency installation | Confirms project dependencies can be installed |
-| Syntax validation | Confirms Python files can compile successfully |
-| Import validation | Confirms core application modules can be imported |
-| Docker setup verification | Confirms Docker setup and documentation are present |
-| CI setup verification | Confirms CI workflow and documentation are present |
-| Docker build check | Confirms the API container image can be built |
-| Pull request validation | Allows changes to be checked before merging |
-| Manual workflow dispatch | Allows the workflow to be triggered manually |
 
-### CI Pipeline Scope
+### CD Controls
 
-The CI pipeline runs database-independent checks:
+| Control | Purpose |
+|---|---|
+| Azure service principal | Allows GitHub Actions to authenticate to Azure securely |
+| GitHub repository secrets | Stores deployment values outside source code |
+| Docker image tagging | Tags images as both `latest` and Git commit SHA |
+| ACR image push | Publishes deployable images to Azure Container Registry |
+| App Service managed identity | Allows secure Azure-side identity management |
+| AcrPull role check | Confirms the App Service can pull images from ACR |
+| Managed identity ACR pull setting | Avoids storing ACR username/password credentials |
+| App Service restart | Applies the new image deployment |
+| `/health/` verification | Confirms the deployed API is running and connected to Azure SQL |
 
-```text
-python -m compileall src scripts
-python scripts/verify_docker_setup.py
-python scripts/verify_ci_setup.py
-docker build -t ecommerce-retail-api .
-```
+### Secret Governance in CI/CD
 
-The pipeline also checks that the large local SQLite database is not tracked by Git.
+The CD workflow uses GitHub Actions secrets for deployment configuration.
 
-### Local Database Governance
+| Secret | Purpose |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal credentials |
+| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
+| `AZURE_WEBAPP_NAME` | Azure App Service name |
+| `AZURE_RESOURCE_GROUP` | Azure resource group |
+| `AZURE_APP_BASE_URL` | Deployed API base URL |
 
-The local SQLite database file:
+The workflow does not commit these values to Git.
 
-```text
-retail_intelligence.db
-```
+Application runtime secrets such as SQL credentials, JWT signing secrets, and demo JWT user credentials remain stored in Azure Key Vault.
 
-is a generated local artifact and should not be committed to GitHub.
+---
 
-This keeps the repository lightweight and avoids storing large generated data files in source control.
-
-### Local Testing vs CI Testing
-
-| Area | Local Testing | GitHub Actions CI |
-|---|---|---|
-| Database-backed API tests | Yes | Not yet |
-| RBAC endpoint tests | Yes | Not yet |
-| Pipeline output tests | Yes | Not yet |
-| Python syntax validation | Yes | Yes |
-| Core import validation | Yes | Yes |
-| Docker setup verification | Yes | Yes |
-| Docker image build | Yes | Yes |
-
-Full database/API tests can be added to CI later after Azure SQL Database or a smaller CI test database is available.
-
-### Current CI/CD Boundary
-
-This phase implements Continuous Integration.
-
-It does not automatically deploy the application to Azure yet.
-
-Continuous Deployment will be implemented later after:
-
-- Azure SQL Database
-- Azure Key Vault
-- Azure App hosting
-- Azure Monitor
-
-are completed.
-
-
-## Azure SQL Database Governance
+## 10. Azure SQL Database Governance
 
 Azure SQL Database is used as the cloud serving database for curated analytical outputs.
 
@@ -364,26 +388,21 @@ The Azure SQL migration focuses on curated, business-ready objects:
 | Operational metrics | Daily, seller, and category operational metrics |
 | Anomaly detection | Operational anomaly rules and alerts |
 | Event pipeline | Event log and processed event records |
+| API serving layer | Executive, operations, and insights serving objects |
 
 Raw CSV files and the local SQLite database are not uploaded into Azure SQL directly as unmanaged raw artifacts.
 
 ### Access and Security Governance
 
-Azure SQL credentials are stored only in the local `.env` file.
+Azure SQL connection values are stored in local `.env` for local development and in Azure Key Vault for the Azure deployment.
 
 The `.env` file is ignored by Git and must not be committed to GitHub.
 
 The safe placeholder variables are documented in `.env.example`.
 
-This phase uses SQL authentication for local development and portfolio demonstration.
-
-In a later phase, secrets will be managed using Azure Key Vault.
-
 ### Firewall Governance
 
-Azure SQL firewall access is configured to allow the local development machine to connect.
-
-Firewall access should be limited to required client IP addresses.
+Azure SQL firewall access should be limited to required client IP addresses and Azure service access required by the deployment.
 
 Broad public access should be avoided.
 
@@ -424,26 +443,11 @@ This report checks:
 
 The Azure SQL Database should use a low-cost or free-tier configuration where available.
 
-Free offer behavior should be configured to pause or stop usage when the monthly free limit is reached.
+Free offer behaviour may pause the database after the monthly allowance is reached. This is acceptable for cost control, but live cloud verification and CD health checks require Azure SQL to be online.
 
-This helps avoid unexpected charges during portfolio development.
+---
 
-### Current Limitation
-
-The FastAPI backend still uses local SQLite at this stage.
-
-Azure SQL is currently used as the cloud serving database and migration target.
-
-A later phase can update the API configuration to use Azure SQL as a live backend database source.
-
-### Governance Outcome
-
-This phase adds cloud database governance by separating raw landing-zone storage from curated serving-layer storage.
-
-It also introduces controlled credentials, firewall configuration, migration reporting, and verification reporting.
-
-
-## Azure Data Factory Governance
+## 11. Azure Data Factory Governance
 
 Azure Data Factory is used as the cloud orchestration layer between Azure Blob Storage and Azure SQL Database.
 
@@ -483,11 +487,12 @@ Future improvements can include:
 - Metadata-driven ingestion
 - Scheduled triggers
 - Multiple file ingestion
-- Azure Key Vault integration
-- Monitoring and alerting
+- Additional Azure Key Vault integration
+- Additional monitoring and alerting
 
+---
 
-## Azure App Service Governance
+## 12. Azure App Service Governance
 
 The deployed FastAPI backend introduces a cloud application layer that requires governance around secrets, access control, deployment, and operational reliability.
 
@@ -501,34 +506,31 @@ Sensitive values include:
 
 - Azure SQL username
 - Azure SQL password
-- API keys
+- JWT signing secret
+- Demo JWT user passwords
 - Connection strings
 
 The `.env.example` file contains placeholders only and is safe for documentation.
 
 The real `.env` file is excluded from version control.
 
----
-
 ### API Access Control
 
-The API uses API key based role-based access control.
-
-| Role | Access Level |
-|---|---|
-| Admin | Full API access |
-| Analyst | Business, operations, and insights access |
-| Viewer | Limited read-only access |
+The API uses JWT Bearer authentication with role-based access control.
 
 Protected endpoints require the following header:
 
 ```text
-X-API-Key
+Authorization: Bearer <access_token>
+```
+
+Users obtain the access token through:
+
+```text
+POST /auth/login
 ```
 
 This prevents unauthenticated access to business and operational data endpoints.
-
----
 
 ### Container Registry Access
 
@@ -542,53 +544,46 @@ AcrPull
 
 This is preferred over enabling ACR admin credentials because it avoids registry username/password usage.
 
----
-
 ### Database Access
 
-The deployed API connects to Azure SQL Database using environment variables.
+The deployed API connects to Azure SQL Database using Key Vault-backed environment variables.
 
 Current implementation:
 
 ```text
-App Service environment variables → SQLAlchemy / pyodbc → Azure SQL Database
+App Service Key Vault references
+        ↓
+Environment variables
+        ↓
+SQLAlchemy / pyodbc
+        ↓
+Azure SQL Database
 ```
-
-Future improvement:
-
-```text
-App Service managed identity → Azure Key Vault → Azure SQL secrets
-```
-
-Azure Key Vault will be added in a later phase to centralize secret management.
-
----
 
 ### Deployment Governance
 
 The deployment uses a controlled image-based release process:
 
 ```text
-Build Docker image locally
+GitHub Actions CD
+        ↓
+Build Docker image
         ↓
 Push image to Azure Container Registry
         ↓
 Azure App Service pulls approved image tag
         ↓
-Verify deployed endpoints
+Verify deployed /health/ endpoint
 ```
 
-This makes deployments repeatable and auditable.
-
-The deployed image tag used in this phase is:
+The CD pipeline pushes both:
 
 ```text
 latest
+<github.sha>
 ```
 
-For production-grade release governance, versioned tags such as `v1.0.0` would be preferable.
-
----
+The commit-SHA tag improves traceability.
 
 ### Verification Governance
 
@@ -608,22 +603,9 @@ This report provides evidence that the deployed API endpoints are available and 
 
 ---
 
-### Current Limitations
+## 13. Azure Key Vault Governance
 
-Current limitations are intentionally documented for transparency:
-
-- API keys are stored as App Service environment variables.
-- Azure SQL credentials are stored as App Service environment variables.
-- The deployed container uses the `latest` image tag.
-- Full Azure Monitor alerting is not yet configured.
-- Key Vault integration is not yet implemented.
-
-These limitations will be addressed in later phases through Azure Key Vault, monitoring, and final deployment hardening.
-
-
-## Azure Key Vault Governance
-
-Azure Key Vault is used to centralize and protect sensitive runtime values for the deployed API.
+Azure Key Vault is used to centralise and protect sensitive runtime values for the deployed API.
 
 ### Governed Secrets
 
@@ -632,11 +614,28 @@ The following secret categories are governed through Key Vault:
 | Secret Category | Examples |
 |---|---|
 | Database connection values | SQL server, database name, username, password |
-| API access keys | Admin, Analyst, Viewer API keys |
+| JWT authentication values | JWT signing secret and demo user credentials |
 
 Actual values are not documented and are not committed to source control.
 
----
+### JWT Secrets
+
+| Key Vault Secret | App Service Setting | Purpose |
+|---|---|---|
+| `jwt-secret-key` | `JWT_SECRET_KEY` | Signs JWT access tokens |
+| `jwt-admin-username` | `JWT_ADMIN_USERNAME` | Demo admin username |
+| `jwt-admin-password` | `JWT_ADMIN_PASSWORD` | Demo admin password |
+| `jwt-analyst-username` | `JWT_ANALYST_USERNAME` | Demo analyst username |
+| `jwt-analyst-password` | `JWT_ANALYST_PASSWORD` | Demo analyst password |
+| `jwt-viewer-username` | `JWT_VIEWER_USERNAME` | Demo viewer username |
+| `jwt-viewer-password` | `JWT_VIEWER_PASSWORD` | Demo viewer password |
+
+Non-sensitive JWT settings can remain as plain App Service settings:
+
+| App Service Setting | Value |
+|---|---|
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
 
 ### Access Control Model
 
@@ -653,8 +652,6 @@ This follows least-privilege principles:
 - The application can only read secrets.
 - The application does not need vault administration rights.
 
----
-
 ### Secret Storage Policy
 
 Secrets must not be stored in:
@@ -670,8 +667,6 @@ The `.env.example` file contains placeholders only.
 
 The real `.env` file is excluded from Git tracking.
 
----
-
 ### Runtime Secret Injection
 
 App Service uses Key Vault references in application settings.
@@ -679,14 +674,12 @@ App Service uses Key Vault references in application settings.
 Example pattern:
 
 ```text
-@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=azure-sql-password)
+@Microsoft.KeyVault(VaultName=kvretailmelbin;SecretName=jwt-secret-key)
 ```
 
 At runtime, App Service resolves this reference and exposes the resolved value as an environment variable.
 
 The FastAPI app does not need to directly call Key Vault.
-
----
 
 ### Verification Evidence
 
@@ -706,27 +699,7 @@ This report confirms that the deployed API still works after secret values are m
 
 ---
 
-### Current Security Position
-
-Implemented controls:
-
-- Key Vault stores SQL credentials and API keys.
-- App Service uses managed identity for secret access.
-- App Service also uses managed identity for ACR image pull.
-- API endpoints are protected with role-based API keys.
-- Real secrets are excluded from GitHub.
-- `.env.example` uses placeholders only.
-
-Remaining future improvements:
-
-- Rotate API keys periodically.
-- Use versioned Docker image tags instead of `latest`.
-- Add Azure Monitor alerts.
-- Consider Entra ID authentication for production-grade API security.
-- Consider managed identity authentication to Azure SQL in a future advanced phase.
-
-
-## Monitoring and Operational Governance
+## 14. Monitoring and Operational Governance
 
 Azure monitoring is used to provide operational visibility for the deployed API.
 
@@ -740,8 +713,6 @@ Azure monitoring is used to provide operational visibility for the deployed API.
 | Availability test | Verifies `/health/` endpoint from external locations |
 | Alert rule | Detects availability failures |
 
----
-
 ### Availability Governance
 
 The deployed API is monitored through a Standard availability test.
@@ -754,19 +725,15 @@ The deployed API is monitored through a Standard availability test.
 | Frequency | 5 minutes |
 | Failure rule | Failed locations >= 2 |
 
-This provides basic evidence that the API is externally reachable and monitored.
-
----
+The `/health/` endpoint remains public because it is used for monitoring and deployment smoke tests.
 
 ### Cost Governance
 
-The project remains on the Free App Service plan to control cost.
+The project uses cost-conscious Azure choices.
 
-Because built-in App Service Health Check requires Basic B1 or higher, it was intentionally skipped.
+Application Insights availability testing is used as the primary monitoring approach. Built-in App Service Health Check is optional and depends on the active App Service plan.
 
-Application Insights availability testing was selected as the monitoring approach for this portfolio deployment.
-
----
+The App Service plan may be scaled up temporarily when needed for reliable deployment or troubleshooting, then reviewed for cost control.
 
 ### Logging Governance
 
@@ -775,13 +742,12 @@ Logs are used for troubleshooting and operational validation.
 The project avoids logging sensitive values such as:
 
 - SQL passwords
-- API keys
+- JWT signing secrets
+- JWT user passwords
 - Key Vault secret values
 - Connection strings
 
 Secrets remain stored in Azure Key Vault and are not written to logs or documentation.
-
----
 
 ### Verification Evidence
 
@@ -801,34 +767,13 @@ This report documents both manual Azure monitoring setup checks and automated de
 
 ---
 
-### Current Monitoring Limitations
-
-Current limitations:
-
-- Built-in App Service Health Check is not enabled due to Free tier limitation.
-- Full distributed tracing is not deeply instrumented inside the FastAPI application.
-- Custom dashboards are not yet created.
-- Alert notification routing is minimal.
-- Production-grade incident response is not implemented.
-
-Future improvements:
-
-- Add custom Application Insights metrics.
-- Add structured logging dashboards.
-- Add Azure Monitor workbook.
-- Add alerts for HTTP 5xx errors and response latency.
-- Add versioned deployment monitoring after CI/CD deployment automation.
-
-
-## Final Technical Governance Summary
+## 15. Final Technical Governance Summary
 
 The final platform includes governance controls across data quality, security, deployment, monitoring, and documentation.
 
 This governance layer helps show that the project is not only a data pipeline, but a controlled cloud data platform.
 
----
-
-## Governance Across the Final Architecture
+### Governance Across the Final Architecture
 
 | Area | Governance Control | Purpose |
 |---|---|---|
@@ -837,17 +782,15 @@ This governance layer helps show that the project is not only a data pipeline, b
 | Transformations | dbt models and tests | Provides structured and testable analytics engineering logic |
 | Warehouse | Facts, dimensions, and curated views | Separates raw data from business-ready outputs |
 | Operational intelligence | Anomaly rules and alert tables | Converts operational issues into structured outputs |
-| API access | API key authentication and RBAC | Restricts access by user role |
+| API access | JWT authentication and RBAC | Restricts access by user role |
 | Secret management | Azure Key Vault | Keeps sensitive values out of source code and plain settings |
-| Container deployment | Docker and ACR | Provides repeatable API deployment |
-| Cloud hosting | Azure App Service | Hosts the secured FastAPI API |
+| Container deployment | Docker, ACR, and App Service | Provides repeatable API deployment |
+| CI/CD | GitHub Actions | Automates validation and deployment |
 | Monitoring | App Service Logs and Application Insights | Provides availability and troubleshooting visibility |
 | Verification | Scripts and CSV reports | Creates evidence that each layer works |
 | Documentation | Architecture and setup docs | Makes the system explainable and auditable |
 
----
-
-## Data Governance Flow
+### Data Governance Flow
 
 ```text
 Raw source files
@@ -865,13 +808,9 @@ KPI and anomaly outputs
 API serving layer
 ```
 
-This flow ensures that business users and API consumers do not work directly from raw data.
+Business users and API consumers do not work directly from raw data. They consume curated and documented outputs.
 
-Instead, they consume curated and documented outputs.
-
----
-
-## Security Governance Flow
+### Security Governance Flow
 
 ```text
 Secrets
@@ -883,22 +822,23 @@ App Service Key Vault references
 Environment variables
     ↓
 FastAPI runtime
+    ↓
+JWT authentication and RBAC authorization
 ```
 
 Security controls include:
 
 - `.env` excluded from Git
 - No secrets stored in Docker image
-- API keys stored in Key Vault for cloud deployment
 - SQL credentials stored in Key Vault
+- JWT signing secret stored in Key Vault
+- Demo JWT user credentials stored in Key Vault
 - App Service managed identity used for Key Vault access
 - App Service managed identity used for ACR image pull
-- Protected API routes require `X-API-Key`
+- Protected API routes require `Authorization: Bearer <access_token>`
 - RBAC limits endpoint access by role
 
----
-
-## Monitoring Governance Flow
+### Monitoring Governance Flow
 
 ```text
 Azure App Service
@@ -921,11 +861,7 @@ Monitoring controls include:
 - Automatic alert rule created for failed locations
 - Monitoring verification report generated
 
-Built-in App Service Health Check was skipped intentionally because the project uses the Free App Service plan. Application Insights availability testing is used instead.
-
----
-
-## Verification Governance
+### Verification Governance
 
 Every major platform layer has a verification step.
 
@@ -939,29 +875,25 @@ Every major platform layer has a verification step.
 | Azure App Service | `data/processed/azure_app_deployment_verification_report.csv` |
 | Azure Key Vault | `data/processed/key_vault_setup_verification_report.csv` |
 | Azure Monitoring | `data/processed/azure_monitoring_setup_verification_report.csv` |
+| CI/CD | GitHub Actions workflow runs and screenshots |
+| JWT Authentication | `tests/api/test_api_jwt_auth.py` and API RBAC tests |
 
-This creates a repeatable evidence trail for the platform.
-
----
-
-## Final Documentation Governance
+### Final Documentation Governance
 
 The final technical documentation is split by purpose.
 
 | Document | Governance Purpose |
 |---|---|
+| `docs/project_showcase.md` | Provides screenshot-backed portfolio walkthrough |
 | `docs/final_architecture.md` | Provides final architecture summary |
-| `docs/technical_architecture.md` | Documents technical decisions and trade-offs |
+| `docs/technical_architecture.md` | Documents technical architecture and runtime design |
 | `docs/system_flow.md` | Explains end-to-end data, API, deployment, security, and monitoring flow |
-| `docs/architecture.md` | Preserves detailed phase-by-phase architecture notes |
+| `docs/architecture.md` | Preserves detailed architecture notes |
 | `docs/setup_guide.md` | Explains how to configure and verify the system |
 | `docs/data_dictionary.md` | Documents tables, outputs, reports, and technical artifacts |
+| `docs/azure_ci_cd.md` | Documents CI/CD deployment automation |
 
-This structure makes the project easier to review, audit, and explain in interviews.
-
----
-
-## Final Governance Outcome
+### Final Governance Outcome
 
 At the end of the technical build, the project includes governance across:
 
@@ -969,165 +901,13 @@ At the end of the technical build, the project includes governance across:
 Data quality
 Transformation testing
 Warehouse modelling
-API access control
+JWT API access control
 Secret management
 Cloud deployment
+CI/CD automation
 Monitoring
 Verification evidence
 Documentation
 ```
 
 This improves the project from a simple analytics build into a more complete cloud data engineering platform.
-
-## CI/CD Governance
-
-The project includes GitHub Actions CI/CD governance to make validation and deployment more controlled and repeatable.
-
-CI/CD governance ensures that the application is not deployed only through manual local commands. Instead, code changes pushed to GitHub trigger automated validation and deployment workflows.
-
----
-
-### CI/CD Governance Flow
-
-```text
-Code pushed to GitHub
-        ↓
-CI pipeline validates project
-        ↓
-CD pipeline builds Docker image
-        ↓
-Image pushed to Azure Container Registry
-        ↓
-Azure App Service updated
-        ↓
-Deployment health check verifies /health/
-```
-
----
-
-### CI Controls
-
-The CI pipeline provides pre-deployment validation.
-
-| Control | Purpose |
-|---|---|
-| Dependency installation | Confirms the project can install in a clean environment |
-| Python syntax validation | Confirms source and script files compile |
-| Import validation | Confirms key application modules can be imported |
-| Docker setup verification | Confirms Docker-related files and configuration exist |
-| CI setup verification | Confirms CI configuration is present and valid |
-| Docker image build | Confirms the API image can be built successfully |
-| Database tracking check | Prevents the large local SQLite database from being committed |
-
----
-
-### CD Controls
-
-The CD pipeline provides controlled deployment to Azure App Service.
-
-| Control | Purpose |
-|---|---|
-| Azure service principal | Allows GitHub Actions to authenticate to Azure securely |
-| GitHub repository secrets | Stores deployment values outside source code |
-| Docker image tagging | Tags images as both `latest` and Git commit SHA |
-| ACR image push | Publishes deployable images to Azure Container Registry |
-| App Service managed identity | Allows secure Azure-side identity management |
-| AcrPull role check | Confirms the App Service can pull images from ACR |
-| Managed identity ACR pull setting | Avoids storing ACR username/password credentials |
-| App Service restart | Applies the new image deployment |
-| `/health/` verification | Confirms the deployed API is running and connected to Azure SQL |
-
----
-
-### Secret Governance in CI/CD
-
-The CD workflow uses GitHub Actions secrets for deployment configuration.
-
-| Secret | Purpose |
-|---|---|
-| `AZURE_CREDENTIALS` | Azure service principal credentials |
-| `ACR_LOGIN_SERVER` | Azure Container Registry login server |
-| `AZURE_WEBAPP_NAME` | Azure App Service name |
-| `AZURE_RESOURCE_GROUP` | Azure resource group |
-| `AZURE_APP_BASE_URL` | Deployed API base URL |
-
-The workflow does not commit these values to Git.
-
-Application runtime secrets such as SQL passwords and API keys remain stored in Azure Key Vault.
-
----
-
-### Deployment Identity Governance
-
-The final deployment design uses managed identity for Azure Container Registry image pulls.
-
-```text
-Azure App Service managed identity
-        ↓
-AcrPull role on Azure Container Registry
-        ↓
-Managed identity based image pull
-```
-
-This avoids storing registry credentials directly in the App Service configuration.
-
----
-
-### CI/CD Verification Evidence
-
-CI/CD evidence is captured through GitHub Actions workflow runs.
-
-Screenshots:
-
-| Evidence | File |
-|---|---|
-| CI pipeline success | `docs/images/02a_ci_pipeline_success.png` |
-| CD pipeline success | `docs/images/02b_cd_pipeline_success.png` |
-
-Documentation:
-
-```text
-docs/azure_ci_cd.md
-```
-
----
-
-### CI/CD Incident and Resolution
-
-During CD implementation, an initial deployment failed because Azure App Service could not pull the Docker image from Azure Container Registry.
-
-The issue was:
-
-```text
-ImagePullUnauthorizedFailure
-```
-
-Resolution:
-
-```text
-Enable App Service managed identity
-Assign AcrPull permission to the App Service identity
-Set acrUseManagedIdentityCreds=true
-Update the CD workflow to preserve managed identity based ACR pull
-Verify the deployed /health/ endpoint
-```
-
-This demonstrates a realistic cloud troubleshooting and governance improvement.
-
----
-
-### CI/CD Governance Outcome
-
-The project now has a controlled deployment process:
-
-```text
-GitHub push
-        ↓
-Automated CI validation
-        ↓
-Automated container build and deployment
-        ↓
-Post-deployment health verification
-```
-
-This improves the project from manual deployment to a repeatable CI/CD-enabled cloud platform.

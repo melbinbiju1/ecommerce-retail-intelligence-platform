@@ -638,6 +638,55 @@ The local API documentation is available through Swagger UI at:
 `http://127.0.0.1:8000/docs`
 
 
+
+## JWT Authentication Artifacts
+
+The API authentication layer uses JWT Bearer tokens with role-based access control.
+
+| Artifact | Description |
+|---|---|
+| `src/api/jwt_auth.py` | JWT token creation, decoding, validation, demo user authentication, and current-user dependency |
+| `src/api/dependencies.py` | RBAC permission dependencies used by protected endpoints |
+| `src/api/routes/auth.py` | Authentication routes for `/auth/login` and `/auth/me` |
+| `tests/api/test_api_jwt_auth.py` | JWT login, invalid login, token validation, missing token, and viewer restriction tests |
+| `tests/api/auth_helpers.py` | Test helper for generating JWT Authorization headers by role |
+
+### JWT Runtime Variables
+
+| Variable | Purpose |
+|---|---|
+| `JWT_SECRET_KEY` | Secret key used to sign JWT access tokens |
+| `JWT_ALGORITHM` | JWT signing algorithm, default `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token expiry in minutes |
+| `JWT_ADMIN_USERNAME` | Demo admin username |
+| `JWT_ADMIN_PASSWORD` | Demo admin password |
+| `JWT_ANALYST_USERNAME` | Demo analyst username |
+| `JWT_ANALYST_PASSWORD` | Demo analyst password |
+| `JWT_VIEWER_USERNAME` | Demo viewer username |
+| `JWT_VIEWER_PASSWORD` | Demo viewer password |
+
+### JWT Role Model
+
+| Role | Access Level |
+|---|---|
+| `admin` | Full access to executive, operations, insights, and admin-only endpoints |
+| `analyst` | Access to executive, operations, and insight endpoints |
+| `viewer` | Limited summary-level read access |
+
+Protected API endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+The access token is returned by:
+
+```text
+POST /auth/login
+```
+
+
+
 ## Docker-Related Files
 
 The project includes Docker-related files to support API containerisation and local deployment testing.
@@ -703,7 +752,7 @@ The Docker container serves the same FastAPI routes as the local Python version.
 | Executive endpoints | Serve executive KPIs and sales summaries |
 | Operations endpoints | Serve operational anomaly and risk outputs |
 | Insights endpoints | Serve AI-ready business insights and LLM context |
-| Authentication layer | Protect endpoints using API keys |
+| Authentication layer | Protect endpoints using JWT Bearer authentication and RBAC |
 | RBAC layer | Restrict endpoint access by user role |
 
 ## Docker Verification Report
@@ -733,7 +782,7 @@ Example checked items include:
 |---|---|---|
 | API runtime | Docker container | Azure-hosted API |
 | Database | SQLite database mounted at runtime | Azure SQL Database |
-| Secrets | Demo API keys | Azure Key Vault |
+| Secrets | JWT signing secret and demo user credentials | Azure Key Vault |
 | Monitoring | Local logs | Azure Monitor |
 | Deployment | Manual Docker commands | CI/CD pipeline |
 
@@ -963,9 +1012,15 @@ This section documents the deployment-related files and outputs for the Azure Ap
 | `AZURE_SQL_USERNAME` | Azure SQL login username |
 | `AZURE_SQL_PASSWORD` | Azure SQL login password |
 | `AZURE_SQL_DRIVER` | ODBC driver used for Azure SQL connectivity |
-| `ADMIN_API_KEY` | API key for admin-level access |
-| `ANALYST_API_KEY` | API key for analyst-level access |
-| `VIEWER_API_KEY` | API key for viewer-level access |
+| `JWT_SECRET_KEY` | Secret key used to sign JWT access tokens |
+| `JWT_ALGORITHM` | JWT signing algorithm, default `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token expiry in minutes |
+| `JWT_ADMIN_USERNAME` | Demo admin username |
+| `JWT_ADMIN_PASSWORD` | Demo admin password |
+| `JWT_ANALYST_USERNAME` | Demo analyst username |
+| `JWT_ANALYST_PASSWORD` | Demo analyst password |
+| `JWT_VIEWER_USERNAME` | Demo viewer username |
+| `JWT_VIEWER_PASSWORD` | Demo viewer password |
 | `WEBSITES_PORT` | Container port used by Azure App Service |
 | `AZURE_APP_BASE_URL` | Base URL used by local verification scripts to test the deployed API |
 
@@ -1044,9 +1099,13 @@ This section documents files and configuration related to Azure Key Vault secret
 | `azure-sql-database` | `AZURE_SQL_DATABASE` |
 | `azure-sql-username` | `AZURE_SQL_USERNAME` |
 | `azure-sql-password` | `AZURE_SQL_PASSWORD` |
-| `admin-api-key` | `ADMIN_API_KEY` |
-| `analyst-api-key` | `ANALYST_API_KEY` |
-| `viewer-api-key` | `VIEWER_API_KEY` |
+| `jwt-secret-key` | `JWT_SECRET_KEY` |
+| `jwt-admin-username` | `JWT_ADMIN_USERNAME` |
+| `jwt-admin-password` | `JWT_ADMIN_PASSWORD` |
+| `jwt-analyst-username` | `JWT_ANALYST_USERNAME` |
+| `jwt-analyst-password` | `JWT_ANALYST_PASSWORD` |
+| `jwt-viewer-username` | `JWT_VIEWER_USERNAME` |
+| `jwt-viewer-password` | `JWT_VIEWER_PASSWORD` |
 
 ### App Service Key Vault Reference Format
 
@@ -1148,7 +1207,7 @@ These files explain the complete implemented architecture of the platform.
 | Docker layer | Dockerfile, `.dockerignore`, Docker image |
 | Azure Container Registry layer | Pushed API container image |
 | Azure App Service layer | Deployed FastAPI container |
-| Azure Key Vault layer | SQL credentials and API key secrets |
+| Azure Key Vault layer | SQL credentials, JWT signing secret, and demo user credential secrets |
 | Azure Monitoring layer | App Service logs, Application Insights availability test, alert rule |
 
 ---
@@ -1220,7 +1279,7 @@ The project uses environment variables to separate configuration from source cod
 | Group | Examples |
 |---|---|
 | API runtime | `APP_ENV`, `WEBSITES_PORT` |
-| API security | `ADMIN_API_KEY`, `ANALYST_API_KEY`, `VIEWER_API_KEY` |
+| API security | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ADMIN_USERNAME`, `JWT_ADMIN_PASSWORD`, `JWT_ANALYST_USERNAME`, `JWT_ANALYST_PASSWORD`, `JWT_VIEWER_USERNAME`, `JWT_VIEWER_PASSWORD` |
 | Azure Blob Storage | `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_BLOB_CONTAINER_NAME`, `AZURE_BLOB_RAW_PREFIX` |
 | Azure SQL Database | `AZURE_SQL_SERVER`, `AZURE_SQL_DATABASE`, `AZURE_SQL_USERNAME`, `AZURE_SQL_PASSWORD`, `AZURE_SQL_DRIVER` |
 | Azure App Service | `AZURE_APP_BASE_URL` |

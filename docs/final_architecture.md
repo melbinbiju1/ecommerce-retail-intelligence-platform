@@ -23,7 +23,7 @@ The final system demonstrates:
 - Azure Data Factory orchestration
 - Azure SQL Database serving layer
 - FastAPI backend
-- Authentication and RBAC
+- JWT authentication and RBAC
 - Docker containerization
 - Azure Container Registry
 - Azure App Service deployment
@@ -59,11 +59,13 @@ Azure Data Factory
         ↓
 Azure SQL Database
         ↓
-FastAPI Backend with Authentication and RBAC
+FastAPI Backend with JWT Authentication and RBAC
         ↓
 Docker Image
         ↓
 Azure Container Registry
+        ↓
+GitHub Actions CI/CD
         ↓
 Azure App Service for Containers
         ↓
@@ -87,7 +89,7 @@ The final platform is organized into the following technical layers:
 | Warehouse layer | SQL, dimensional modelling | Builds facts, dimensions, and analytical serving views |
 | Operational intelligence layer | SQL, Python | Detects anomalies and creates operational alert records |
 | API layer | FastAPI, Python | Exposes curated business and operational metrics |
-| Security layer | API keys, RBAC, Azure Key Vault | Protects API endpoints and cloud secrets |
+| Security layer | JWT authentication, RBAC, Azure Key Vault | Protects API endpoints and cloud secrets |
 | Deployment layer | Docker, ACR, Azure App Service | Deploys the API as a cloud-hosted container |
 | Monitoring layer | App Service Logs, Application Insights | Tracks logs, health, and availability |
 
@@ -513,7 +515,26 @@ Example protected endpoints:
 
 ## 17. API Security and RBAC Layer
 
-The API uses API key based authentication with role-based access control.
+The API uses JWT Bearer authentication with role-based access control.
+
+Users authenticate through:
+
+```text
+POST /auth/login
+```
+
+After successful login, the API returns a signed JWT access token. Protected endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Authentication endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `/auth/login` | Authenticates a demo user and returns a JWT access token |
+| `/auth/me` | Returns the authenticated user's username and role |
 
 Roles:
 
@@ -521,15 +542,9 @@ Roles:
 |---|---|
 | Admin | Full API access |
 | Analyst | Business, operational, and insight access |
-| Viewer | Limited read-only access |
+| Viewer | Limited summary-level read access |
 
-Protected endpoints require:
-
-```text
-X-API-Key
-```
-
-This demonstrates a practical access-control pattern for portfolio API deployment.
+This demonstrates a token-based API security pattern with role-based authorization for portfolio API deployment.
 
 ---
 
@@ -576,11 +591,45 @@ Purpose:
 - Store deployable container image
 - Separate image storage from source code
 - Allow Azure App Service to pull the image securely
-- Support future CI/CD deployment improvements
+- Support GitHub Actions CI/CD deployment
 
 ---
 
-## 20. Azure App Service Deployment Layer
+## 20. GitHub Actions CI/CD Layer
+
+GitHub Actions automates validation and deployment.
+
+CI/CD responsibilities:
+
+- Validate Python syntax and imports
+- Confirm setup checks pass
+- Build the Docker image
+- Push Docker image tags to Azure Container Registry
+- Ensure App Service managed identity exists
+- Ensure the App Service identity has `AcrPull` permission
+- Configure managed identity based ACR image pull
+- Restart Azure App Service
+- Verify the deployed `/health/` endpoint
+
+Deployment flow:
+
+```text
+Push to main
+    ↓
+GitHub Actions CI
+    ↓
+GitHub Actions CD
+    ↓
+Docker image pushed to ACR
+    ↓
+Azure App Service updated
+    ↓
+/health/ endpoint verification
+```
+
+---
+
+## 21. Azure App Service Deployment Layer
 
 Azure App Service hosts the FastAPI backend as a Linux container.
 
@@ -605,7 +654,7 @@ The Web App uses managed identity to pull the container image from ACR with the 
 
 ---
 
-## 21. Azure Key Vault Security Layer
+## 22. Azure Key Vault Security Layer
 
 Azure Key Vault stores sensitive values used by the deployed API.
 
@@ -615,11 +664,31 @@ Secrets stored in Key Vault include:
 - Azure SQL database
 - Azure SQL username
 - Azure SQL password
-- Admin API key
-- Analyst API key
-- Viewer API key
+- JWT signing secret
+- JWT admin username and password
+- JWT analyst username and password
+- JWT viewer username and password
 
 App Service uses Key Vault references in environment variables.
+
+JWT Key Vault mapping:
+
+| Key Vault Secret | App Service Setting | Purpose |
+|---|---|---|
+| `jwt-secret-key` | `JWT_SECRET_KEY` | Signs JWT access tokens |
+| `jwt-admin-username` | `JWT_ADMIN_USERNAME` | Demo admin username |
+| `jwt-admin-password` | `JWT_ADMIN_PASSWORD` | Demo admin password |
+| `jwt-analyst-username` | `JWT_ANALYST_USERNAME` | Demo analyst username |
+| `jwt-analyst-password` | `JWT_ANALYST_PASSWORD` | Demo analyst password |
+| `jwt-viewer-username` | `JWT_VIEWER_USERNAME` | Demo viewer username |
+| `jwt-viewer-password` | `JWT_VIEWER_PASSWORD` | Demo viewer password |
+
+Non-sensitive JWT settings can remain as plain App Service settings:
+
+| App Service Setting | Value |
+|---|---|
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
 
 Example pattern:
 
@@ -643,7 +712,7 @@ The FastAPI application does not directly call Key Vault. Azure App Service reso
 
 ---
 
-## 22. Monitoring and Availability Layer
+## 23. Monitoring and Availability Layer
 
 Azure monitoring is used to validate that the deployed API is reachable and observable.
 
@@ -665,13 +734,13 @@ Availability test:
 | Frequency | 5 minutes |
 | Alert condition | Failed locations >= 2 |
 
-Built-in App Service Health Check was intentionally skipped because the project uses the Free App Service plan.
+Application Insights availability testing is used as the primary monitoring approach for this portfolio deployment.
 
-Application Insights availability testing is used instead to avoid unnecessary cost.
+The public `/health/` endpoint remains unauthenticated so monitoring and CI/CD smoke tests can verify API availability without storing privileged credentials in monitoring tools.
 
 ---
 
-## 23. Verification and Testing Layer
+## 24. Verification and Testing Layer
 
 The project includes multiple verification scripts to prove that each major layer works.
 
@@ -707,7 +776,7 @@ This makes the project easier to validate and explain.
 
 ---
 
-## 24. Final Cloud Architecture
+## 25. Final Cloud Architecture
 
 ```text
 Raw Olist CSV Data
@@ -738,7 +807,7 @@ This cloud architecture demonstrates:
 
 ---
 
-## 25. Local Development Architecture
+## 26. Local Development Architecture
 
 ```text
 Raw Olist CSV Data
@@ -760,7 +829,7 @@ This local architecture allows development, testing, and transformation work to 
 
 ---
 
-## 26. Final System Design Decisions
+## 27. Final System Design Decisions
 
 Important design decisions:
 
@@ -773,13 +842,15 @@ Important design decisions:
 | FastAPI for serving | Lightweight and suitable for analytical API endpoints |
 | Docker for deployment | Makes the API portable and cloud deployable |
 | Azure App Service for hosting | Managed container hosting without Kubernetes complexity |
-| Key Vault for secrets | Avoids storing secrets directly in App Service settings |
+| Key Vault for secrets | Avoids storing SQL credentials, JWT signing secret, and demo user credentials directly in App Service settings |
+| JWT authentication | Demonstrates token-based API authentication with role-based authorization |
+| GitHub Actions CI/CD | Automates validation, container build, ACR push, App Service deployment, and health verification |
 | Application Insights for monitoring | Provides availability checks and alerting |
 | Power BI deferred | Keeps dashboarding as a final presentation layer |
 
 ---
 
-## 27. Skills Demonstrated
+## 28. Skills Demonstrated
 
 This architecture demonstrates practical skills in:
 
@@ -791,10 +862,10 @@ This architecture demonstrates practical skills in:
 - Operational analytics
 - Anomaly detection logic
 - API development
-- API authentication and RBAC
+- JWT authentication and RBAC
 - Automated testing
 - Docker containerization
-- GitHub Actions CI
+- GitHub Actions CI/CD
 - Azure Blob Storage
 - Azure SQL Database
 - Azure Data Factory
@@ -806,23 +877,7 @@ This architecture demonstrates practical skills in:
 
 ---
 
-## 28. Interview Explanation
-
-A concise technical explanation:
-
-```text
-I built an end-to-end e-commerce retail intelligence platform. The project starts with raw Olist CSV files, loads them into SQLite, validates data quality, builds staging and warehouse models with SQL and dbt, and creates operational anomaly detection outputs. I then migrated curated tables to Azure SQL, uploaded raw files to Azure Blob Storage, orchestrated a cloud copy pipeline with Azure Data Factory, and exposed the data through a secured FastAPI backend. The API is containerized with Docker, stored in Azure Container Registry, deployed to Azure App Service, secured with Azure Key Vault, and monitored using Application Insights availability tests.
-```
-
-A shorter version:
-
-```text
-This is a cloud data engineering portfolio project that turns raw e-commerce data into a monitored Azure-hosted analytics API. It includes ingestion, data quality checks, dbt transformations, dimensional modelling, anomaly detection, Azure SQL serving, FastAPI deployment, Key Vault secret management, and Application Insights monitoring.
-```
-
----
-
-## 29. Final Architecture Outcome
+## 30. Final Architecture Outcome
 
 The final implemented architecture proves that the project is more than a local analytics notebook.
 
@@ -832,8 +887,9 @@ It is a complete cloud data platform with:
 - Tested data transformations
 - Cloud storage and orchestration
 - Cloud relational serving
-- Secured API deployment
+- JWT-secured API deployment
 - Secret management
+- GitHub Actions CI/CD
 - Availability monitoring
 - Clear verification evidence
 

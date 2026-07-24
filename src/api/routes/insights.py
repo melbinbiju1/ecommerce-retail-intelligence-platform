@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from src.api.auth import require_roles
+from src.api.dependencies import require_admin, require_insights_access, require_executive_access
 from src.api.schemas import APIResponse
 from src.ai_assistant.business_insights import (
     generate_executive_summary,
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/insights", tags=["AI-Ready Business Insights"])
 
 @router.get("/executive-summary", response_model=APIResponse)
 def get_ai_executive_summary(
-    role: str = Depends(require_roles(["admin", "analyst", "viewer"])),
+    current_user: dict = Depends(require_executive_access),
 ) -> APIResponse:
     insight = generate_executive_summary()
 
@@ -29,7 +29,7 @@ def get_ai_executive_summary(
 
 @router.get("/sales-performance", response_model=APIResponse)
 def get_ai_sales_performance(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_insights_access),
 ) -> APIResponse:
     insight = generate_sales_performance_summary()
 
@@ -41,7 +41,7 @@ def get_ai_sales_performance(
 
 @router.get("/operational-risk", response_model=APIResponse)
 def get_ai_operational_risk(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_insights_access),
 ) -> APIResponse:
     insight = generate_operational_risk_summary()
 
@@ -53,7 +53,7 @@ def get_ai_operational_risk(
 
 @router.get("/recommendations", response_model=APIResponse)
 def get_ai_recommendations(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_insights_access),
 ) -> APIResponse:
     insight = generate_recommendations()
 
@@ -65,7 +65,7 @@ def get_ai_recommendations(
 
 @router.get("/llm-context", response_model=APIResponse)
 def get_llm_context(
-    role: str = Depends(require_roles(["admin"])),
+    current_user: dict = Depends(require_admin),
 ) -> APIResponse:
     context = build_llm_context_summary()
 

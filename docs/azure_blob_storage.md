@@ -145,11 +145,3 @@ In later phases, Azure Data Factory can use this raw Blob Storage location as a 
 | Secrets | Local `.env` | Later Azure Key Vault |
 | Database | SQLite | Later Azure SQL Database |
 | Pipeline orchestration | Local scripts | Later Azure Data Factory |
-
-## Interview Explanation
-
-A simple interview explanation for this phase:
-
-```text
-I added Azure Blob Storage as the cloud landing zone for the raw e-commerce dataset. I created a private container, uploaded the raw Olist CSV files under a structured raw/olist path, and built Python scripts to upload and verify the files. This prepares the project for Azure Data Factory ingestion and Azure SQL Database loading in later phases.
-```

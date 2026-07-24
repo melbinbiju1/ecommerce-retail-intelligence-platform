@@ -1,9 +1,7 @@
-from fastapi import Depends
-from src.api.auth import require_roles
-
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from src.api.database import fetch_one, fetch_all
+from src.api.dependencies import require_executive_access, require_permission
 from src.api.schemas import APIResponse
 
 
@@ -12,7 +10,7 @@ router = APIRouter(prefix="/executive", tags=["Executive"])
 
 @router.get("/summary", response_model=APIResponse)
 def get_executive_summary(
-    role: str = Depends(require_roles(["admin", "analyst", "viewer"])),
+    current_user: dict = Depends(require_executive_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -29,7 +27,7 @@ def get_executive_summary(
 
 @router.get("/monthly-sales", response_model=APIResponse)
 def get_monthly_sales(
-    role: str = Depends(require_roles(["admin", "analyst", "viewer"])),
+    current_user: dict = Depends(require_executive_access),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -48,7 +46,7 @@ def get_monthly_sales(
 @router.get("/top-products", response_model=APIResponse)
 def get_top_products(
     limit: int = Query(default=10, ge=1, le=50),
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_permission("insights")),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -67,7 +65,7 @@ def get_top_products(
 @router.get("/top-sellers", response_model=APIResponse)
 def get_top_sellers(
     limit: int = Query(default=10, ge=1, le=50),
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_permission("insights")),
 ) -> APIResponse:
     query = """
     SELECT *
@@ -85,7 +83,7 @@ def get_top_sellers(
 
 @router.get("/customer-states", response_model=APIResponse)
 def get_customer_states(
-    role: str = Depends(require_roles(["admin", "analyst"])),
+    current_user: dict = Depends(require_permission("insights")),
 ) -> APIResponse:
     query = """
     SELECT *

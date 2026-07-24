@@ -184,7 +184,7 @@ Application Insights Monitoring
 | Warehouse | SQLite, Azure SQL | Store curated facts, dimensions, KPIs, and operational outputs |
 | Operational intelligence | SQL, Python | Generate anomaly alerts and operational risk metrics |
 | API backend | FastAPI | Expose business metrics and insights through JSON endpoints |
-| Security | API keys, RBAC, Azure Key Vault | Protect API access and cloud secrets |
+| Security | JWT authentication, RBAC, Azure Key Vault | Protect API access and cloud secrets |
 | Deployment | Docker, ACR, Azure App Service | Deploy the API as a cloud-hosted container |
 | Monitoring | App Service Logs, Application Insights | Monitor API logs, health, and availability |
 
@@ -334,17 +334,46 @@ uvicorn src.api.main:app --reload
 
 ## API Authentication and RBAC
 
-The FastAPI backend includes API-key based authentication and role-based access control.
+The FastAPI backend uses JWT Bearer authentication with role-based access control.
 
-Protected endpoints require the `X-API-Key` request header.
+Users authenticate through the login endpoint:
 
-### Demo API Keys
+```text
+POST /auth/login
+```
 
-| Role | Demo Key | Access Level |
+After successful login, the API returns a signed JWT access token. Protected endpoints require the token in the request header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+The public root and health endpoints remain accessible without authentication so they can be used for basic API checks and deployment monitoring.
+
+---
+
+### Demo JWT Users
+
+| Role | Username | Access Level |
 |---|---|---|
-| Admin | `admin-demo-key` | Full API access |
-| Analyst | `analyst-demo-key` | Executive and operational read access |
-| Viewer | `viewer-demo-key` | Limited executive read access |
+| Admin | `admin` | Full API access |
+| Analyst | `analyst` | Executive, operational, and insight read access |
+| Viewer | `viewer` | Limited summary-level read access |
+
+Passwords are stored in local `.env` for local development and in Azure Key Vault for the deployed Azure App Service.
+
+Do not commit passwords or JWT secrets to Git.
+
+---
+
+### Authentication Endpoints
+
+| Endpoint | Method | Purpose | Authentication Required |
+|---|---|---|---|
+| `/auth/login` | POST | Authenticates a demo user and returns a JWT access token | No |
+| `/auth/me` | GET | Returns the authenticated user's username and role | Yes |
+
+---
 
 ### Role Access Matrix
 
@@ -352,6 +381,8 @@ Protected endpoints require the `X-API-Key` request header.
 |---|---:|---:|---:|
 | `/` | Yes | Yes | Yes |
 | `/health/` | Yes | Yes | Yes |
+| `/auth/login` | Yes | Yes | Yes |
+| `/auth/me` | Yes | Yes | Yes |
 | `/executive/summary` | Yes | Yes | Yes |
 | `/executive/monthly-sales` | Yes | Yes | Yes |
 | `/executive/top-products` | Yes | Yes | No |
@@ -370,11 +401,50 @@ Protected endpoints require the `X-API-Key` request header.
 | `/insights/recommendations` | Yes | Yes | No |
 | `/insights/llm-context` | Yes | No | No |
 
-### Example Request
+---
 
-```powershell
-curl -H "X-API-Key: analyst-demo-key" http://127.0.0.1:8000/operations/alert-summary
+### Example Login Request
+
+```bash
+curl -X POST "http://127.0.0.1:8000/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=analyst&password=<analyst-password>"
 ```
+
+Example response:
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "role": "analyst",
+  "expires_in_minutes": 60
+}
+```
+
+---
+
+### Example Protected Request
+
+```bash
+curl -H "Authorization: Bearer <access_token>" \
+  http://127.0.0.1:8000/operations/alert-summary
+```
+
+---
+
+### JWT Security Design
+
+| Component | Design |
+|---|---|
+| Token type | JWT Bearer token |
+| Token endpoint | `/auth/login` |
+| Current user endpoint | `/auth/me` |
+| Token expiry | 60 minutes |
+| Signing algorithm | `HS256` |
+| Signing secret | Stored in Azure Key Vault for cloud deployment |
+| User credentials | Stored in local `.env` locally and Azure Key Vault in Azure |
+| Authorization model | Role-based access control |
 
 ## AI-Ready Business Insights Assistant
 
@@ -497,7 +567,7 @@ Docker is used in this project to demonstrate:
 | Docker container | Runs the FastAPI API on port `8000` |
 | Local database | `retail_intelligence.db` is mounted into the container at runtime |
 | API framework | FastAPI with Uvicorn |
-| Authentication | API-key authentication and role-based access control remain active |
+| Authentication | JWT Bearer authentication and role-based access control remain active |
 | Future cloud database | Azure SQL Database |
 | Detailed documentation | Full Docker instructions are available in `docker/README.md` |
 
@@ -991,11 +1061,28 @@ Public health endpoint:
 /health/
 ```
 
+The health endpoint is public and can be tested without authentication:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/"
+```
+
+JWT login request:
+
+```powershell
+$loginResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/auth/login" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body "username=admin&password=<admin-password>"
+```
+
 Protected endpoint test:
 
 ```powershell
 $headers = @{
-    "X-API-Key" = "admin-demo-key"
+    "Authorization" = "Bearer $($loginResponse.access_token)"
 }
 
 Invoke-RestMethod `
@@ -1030,15 +1117,19 @@ Azure SQL Database and protected API routes
 
 ### Secrets Managed in Key Vault
 
-| Secret | Purpose |
+| Key Vault Secret | Purpose |
 |---|---|
-| Azure SQL server | Database hostname |
-| Azure SQL database | Database name |
-| Azure SQL username | SQL login username |
-| Azure SQL password | SQL login password |
-| Admin API key | Admin access to protected endpoints |
-| Analyst API key | Analyst access to protected endpoints |
-| Viewer API key | Viewer access to protected endpoints |
+| `azure-sql-server` | Azure SQL Database hostname |
+| `azure-sql-database` | Azure SQL Database name |
+| `azure-sql-username` | Azure SQL login username |
+| `azure-sql-password` | Azure SQL login password |
+| `jwt-secret-key` | Secret key used to sign JWT access tokens |
+| `jwt-admin-username` | Admin username for JWT login |
+| `jwt-admin-password` | Admin password for JWT login |
+| `jwt-analyst-username` | Analyst username for JWT login |
+| `jwt-analyst-password` | Analyst password for JWT login |
+| `jwt-viewer-username` | Viewer username for JWT login |
+| `jwt-viewer-password` | Viewer password for JWT login |
 
 ### Managed Identity
 

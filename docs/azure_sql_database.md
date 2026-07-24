@@ -142,11 +142,3 @@ Firewall access is restricted by allowing only the current client IP for local d
 The Azure SQL Database is configured using a low-cost or free-tier option where available.
 
 The free offer behavior should be configured to pause or stop usage when the free monthly limit is reached to avoid unexpected costs.
-
-## Interview Explanation
-
-A simple interview explanation for this phase:
-
-```text
-I added Azure SQL Database as the cloud serving layer for curated analytical tables. Raw data lands in Azure Blob Storage, curated warehouse and operational outputs are migrated from the local transformation pipeline into Azure SQL, and this prepares the project for cloud-based API and Power BI access. I also added connection testing, migration reporting, verification reporting, and environment-based configuration.
-```

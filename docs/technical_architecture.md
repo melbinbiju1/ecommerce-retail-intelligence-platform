@@ -14,7 +14,7 @@ This document focuses on:
 - How the components interact
 - How local and cloud modes differ
 - How data moves through the system
-- How the API is secured and deployed
+- How the API is secured with JWT and RBAC and deployed
 - How the platform is verified and monitored
 
 For the complete final architecture summary, see:
@@ -74,13 +74,13 @@ The architecture is designed to be:
 | Cloud orchestration | Azure Data Factory | Copies cloud raw data into Azure SQL staging |
 | Cloud database | Azure SQL Database | Serves curated data to deployed API |
 | API backend | FastAPI | Exposes metrics and insights |
-| API security | API keys, RBAC | Protects endpoints by role |
+| API security | JWT authentication, RBAC | Protects endpoints using Bearer tokens and role permissions |
 | Containerization | Docker | Packages API for deployment |
 | Image registry | Azure Container Registry | Stores deployable API image |
 | App hosting | Azure App Service | Runs FastAPI container |
-| Secret management | Azure Key Vault | Stores SQL credentials and API keys |
+| Secret management | Azure Key Vault | Stores SQL credentials, JWT signing secret, and demo user credentials |
 | Monitoring | Application Insights | Tracks API availability |
-| CI | GitHub Actions | Validates code, imports, Docker build, and project structure |
+| CI/CD | GitHub Actions | Validates code, builds Docker image, pushes to ACR, deploys to Azure App Service, and verifies health |
 
 ---
 
@@ -366,29 +366,51 @@ JSON response
 
 ## 12. API Security Architecture
 
-The API uses API key authentication with role-based access control.
+The API uses JWT Bearer authentication with role-based access control.
 
 ```text
-X-API-Key
+Client
     ↓
-Key validation
+POST /auth/login
     ↓
-Role assignment
+Validate demo user credentials
+    ↓
+Create signed JWT access token
+    ↓
+Client sends Authorization: Bearer <access_token>
+    ↓
+Validate token signature and expiry
+    ↓
+Read role claim from token
     ↓
 Endpoint permission check
 ```
+
+Authentication endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `/auth/login` | Authenticates a demo user and returns a JWT access token |
+| `/auth/me` | Returns the authenticated user's username and role |
 
 Roles:
 
 | Role | Access Pattern |
 |---|---|
 | Admin | Full access |
-| Analyst | Business, operations, and insights access |
-| Viewer | Limited read-only access |
+| Analyst | Executive, operations, and insights access |
+| Viewer | Limited summary-level read access |
 
-This is intentionally simple and appropriate for a portfolio API.
+Public endpoints such as `/`, `/health/`, `/docs`, `/openapi.json`, and `/auth/login` remain accessible without authentication.
 
-The project avoids hardcoding API keys in source code. In Azure, API keys are stored in Key Vault and injected through App Service settings.
+Protected endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+The project avoids hardcoding JWT secrets or demo user passwords in source code. In Azure, the JWT signing secret and demo user credentials are stored in Key Vault and injected into App Service using Key Vault references.
+
 
 ---
 
@@ -547,10 +569,22 @@ azure-sql-server
 azure-sql-database
 azure-sql-username
 azure-sql-password
-admin-api-key
-analyst-api-key
-viewer-api-key
+jwt-secret-key
+jwt-admin-username
+jwt-admin-password
+jwt-analyst-username
+jwt-analyst-password
+jwt-viewer-username
+jwt-viewer-password
 ```
+
+Non-sensitive JWT runtime settings are stored as plain App Service settings:
+
+```text
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
 
 App Service uses Key Vault reference syntax:
 
@@ -695,15 +729,15 @@ Availability test:
 fastapi-health-check
 ```
 
-The built-in App Service Health Check feature was skipped because the project uses the Free App Service plan.
+The project uses Application Insights availability testing as the main external health monitoring mechanism.
 
-Application Insights availability testing is used instead.
+This keeps monitoring independent from manual browser checks and provides evidence for API availability.
 
 ---
 
-## 23. CI Architecture
+## 23. CI/CD Architecture
 
-GitHub Actions is used to validate the project on every push.
+GitHub Actions is used to validate and deploy the project.
 
 CI checks include:
 
@@ -714,10 +748,23 @@ CI checks include:
 - Docker setup validation runs
 - CI setup validation runs
 - Docker image builds successfully
+- JWT authentication tests pass
+
+CD steps include:
+
+- Azure login using a service principal
+- Docker image build
+- Docker image push to Azure Container Registry
+- App Service managed identity validation
+- `AcrPull` permission validation
+- App Service container image update
+- App Service restart
+- `/health/` endpoint verification
 
 The CI workflow avoids depending on the large local SQLite database.
 
-This makes the workflow faster and more reliable for GitHub.
+The CD workflow uses the public `/health/` endpoint as a deployment smoke test. Protected endpoints are verified separately using JWT-enabled local and API tests.
+
 
 ---
 
@@ -798,7 +845,7 @@ The `.env` file must not be committed.
 
 Important configuration groups:
 
-- API keys
+- JWT authentication settings
 - Azure SQL settings
 - Azure Blob settings
 - Azure App Service URL
@@ -862,11 +909,14 @@ Security decisions:
 |---|---|
 | `.env` ignored by Git | Prevent local secrets from being committed |
 | Key Vault for cloud secrets | Avoid plain secret values in App Service settings |
-| API keys for protected routes | Simple portfolio authentication |
-| RBAC roles | Demonstrates access control logic |
+| JWT Bearer authentication | Demonstrates token-based API authentication |
+| RBAC roles | Demonstrates endpoint-level access control logic |
+| Token expiry | Limits the lifetime of issued access tokens |
 | Managed identity for ACR pull | Avoid registry credentials |
+| Managed identity for Key Vault access | Allows App Service to read secrets securely |
 | No SQLite DB inside Docker image | Avoid shipping large/local state |
 | No secrets in Docker image | Keeps image reusable and safer |
+
 
 ---
 
@@ -878,12 +928,12 @@ Cost-aware choices:
 
 | Choice | Reason |
 |---|---|
-| Free App Service plan | Avoid unnecessary hosting cost |
+| Basic App Service plan during deployment testing | Supports reliable container deployment after Free plan quota limits were reached |
 | SQLite for local development | Avoid always-on cloud database during development |
 | Azure SQL free/serverless-style configuration | Reduce database cost |
-| Application Insights availability instead of App Service Health Check | Avoid scaling up only for health check |
+| Application Insights availability testing | Provides health monitoring without relying only on App Service built-in checks |
 | Small ADF demo pipeline | Demonstrate orchestration without large data movement cost |
-| Manual image push | Avoid extra deployment automation complexity early |
+| GitHub Actions CD | Automates image build, push, deployment, and health verification |
 
 ---
 
@@ -895,11 +945,10 @@ Potential future scaling improvements:
 
 - Move from SQLite local development to full cloud development database
 - Add incremental ingestion
-- Add CI/CD container deployment from GitHub Actions
 - Add more ADF pipelines
 - Add Azure Monitor dashboards or workbooks
 - Add more structured application telemetry
-- Add production identity provider instead of API keys
+- Add production identity provider such as Microsoft Entra ID instead of demo JWT users
 - Add caching for high-traffic API endpoints
 - Add Power BI dashboard refresh integration
 
@@ -912,9 +961,9 @@ These are future improvements, not required for the current portfolio version.
 | Area | Current Choice | Trade-Off |
 |---|---|---|
 | Local warehouse | SQLite | Simple and cheap, but not distributed |
-| API auth | API keys | Easy to implement, less advanced than OAuth |
+| API auth | JWT Bearer tokens with RBAC | More realistic than JWT credentials, but still simpler than a production identity provider |
 | Orchestration | ADF demo pipeline | Shows Azure orchestration, but not every local pipeline step is cloud-orchestrated |
-| Deployment | Manual Docker push | Clear and reliable, but not full CD |
+| Deployment | GitHub Actions CD | Repeatable automated deployment, but still a portfolio-scale workflow |
 | Monitoring | Availability test | Good basic uptime monitoring, but not full observability |
 | Dashboard | Deferred Power BI | Keeps engineering complete before visualization |
 
@@ -934,7 +983,7 @@ It demonstrates:
 - How operational anomalies are generated
 - How curated data is moved to Azure SQL
 - How a FastAPI backend serves the data
-- How the API is secured
+- How the API is secured with JWT and RBAC
 - How the API is containerized and deployed
 - How secrets are managed
 - How availability is monitored

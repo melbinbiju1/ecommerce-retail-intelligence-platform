@@ -41,10 +41,10 @@ Azure Monitor Alert Rule
 
 | Resource Type | Resource Name |
 |---|---|
-| Resource Group | `rg-ecommerce-retail-intelligence` |
-| Azure App Service | `app-ecommerce-retail-api-melbin` |
-| Application Insights | `appi-ecommerce-retail-api` |
-| Log Analytics Workspace | `DefaultWorkspace-71824cc9-1ca6-416a-a165-e04697541fda-francece` |
+| Resource Group | `<resource-group-name>` |
+| Azure App Service | `<app-service-name>` |
+| Application Insights | `<application-insights-name>` |
+| Log Analytics Workspace | `<log-analytics-workspace-name>` |
 | Availability Test | `fastapi-health-check` |
 | Alert Rule | Automatically created availability alert rule |
 
@@ -68,7 +68,7 @@ Logs can be viewed in:
 ```text
 Azure Portal
 → App Services
-→ app-ecommerce-retail-api-melbin
+→ <app-service-name>
 → Monitoring
 → Log stream
 ```
@@ -76,20 +76,18 @@ Azure Portal
 The Log Stream was verified by calling the deployed health endpoint:
 
 ```text
-https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+https://<app-service-hostname>/health/
 ```
 
 ---
 
 ## Built-in App Service Health Check
 
-Azure App Service built-in Health Check was not enabled because the project is deployed on the Free App Service plan.
+Azure App Service built-in Health Check is not the primary monitoring approach for this project.
 
-The Azure Portal indicated that built-in Health Check requires a Basic B1 or higher App Service plan.
+During the initial monitoring setup, the API was running on the Free App Service plan, where built-in App Service Health Check was unavailable. The Azure Portal indicated that built-in Health Check requires a Basic B1 or higher App Service plan.
 
-To avoid unnecessary cost, this feature was intentionally skipped.
-
-Instead, the project uses Application Insights availability testing against the `/health/` endpoint.
+Later, the App Service was upgraded to Basic B1 during CI/CD deployment troubleshooting. However, Application Insights availability testing remains the chosen monitoring approach because it checks the public `/health/` endpoint externally from multiple Azure locations.
 
 This is the chosen monitoring approach for the portfolio version.
 
@@ -101,11 +99,11 @@ Application Insights was created to monitor the deployed API.
 
 | Setting | Value |
 |---|---|
-| Application Insights resource | `appi-ecommerce-retail-api` |
-| Region | France Central |
-| Resource group | `rg-ecommerce-retail-intelligence` |
+| Application Insights resource | `<application-insights-name>` |
+| Region | <azure-region> |
+| Resource group | `<resource-group-name>` |
 | Resource mode | Workspace-based |
-| Connected App Service | `app-ecommerce-retail-api-melbin` |
+| Connected App Service | `<app-service-name>` |
 
 Application Insights provides:
 
@@ -123,11 +121,11 @@ The deployed App Service was connected to the existing Application Insights reso
 
 ```text
 App Services
-→ app-ecommerce-retail-api-melbin
+→ <app-service-name>
 → Settings
 → Application Insights
 → Select existing resource
-→ appi-ecommerce-retail-api
+→ <application-insights-name>
 ```
 
 Azure added Application Insights-related configuration to the App Service settings.
@@ -144,7 +142,7 @@ A Standard availability test was created for the deployed API health endpoint.
 |---|---|
 | Test name | `fastapi-health-check` |
 | Test type | Standard availability test |
-| URL | `https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/` |
+| URL | `https://<app-service-hostname>/health/` |
 | HTTP method | GET |
 | Expected response | HTTP 200 |
 | Frequency | 5 minutes |
@@ -173,7 +171,7 @@ Alert configuration:
 
 | Field | Value |
 |---|---|
-| Scope | `appi-ecommerce-retail-api` |
+| Scope | `<application-insights-name>` |
 | Signal | Availability |
 | Condition | Failed locations >= 2 |
 | Severity | 1 - Error |
@@ -224,13 +222,14 @@ The script verifies:
 
 - App Service logging was manually enabled
 - Log Stream was manually verified
-- Built-in Health Check was intentionally skipped due to Free tier limitation
+- Built-in App Service Health Check is not used as the primary monitoring method
 - Application Insights was created
 - Availability test was created
 - Availability alert rule was created
 - Public health endpoint returns HTTP 200
-- Protected executive summary endpoint returns HTTP 200
-- Protected operational alert summary endpoint returns HTTP 200
+- JWT login endpoint returns an access token
+- Protected executive summary endpoint returns HTTP 200 when called with a valid JWT Bearer token
+- Protected operational alert summary endpoint returns HTTP 200 when called with a valid JWT Bearer token
 
 ---
 
@@ -261,7 +260,7 @@ The deployed health endpoint is:
 Full URL:
 
 ```text
-https://app-ecommerce-retail-api-melbin-a9habdejcgf0fkha.francecentral-01.azurewebsites.net/health/
+https://<app-service-hostname>/health/
 ```
 
 Expected response:
@@ -312,19 +311,20 @@ Check:
 
 Check:
 
-- Local `.env` contains the current admin API key
-- The admin API key matches the Key Vault secret
-- The request header is `X-API-Key`
-- Key Vault references are resolved in App Service
+- Local `.env` contains the current JWT admin username and password
+- Azure Key Vault contains the current JWT signing secret and demo user credentials
+- App Service Key Vault references for JWT settings are resolved
+- The request first authenticates through `/auth/login`
+- The protected request uses the header `Authorization: Bearer <access_token>`
 - API serving objects exist in Azure SQL
 
 ---
 
-### Built-in Health Check unavailable
+### Built-in Health Check not used
 
-This is expected on the Free App Service plan.
+The project uses Application Insights availability tests instead of built-in App Service Health Check.
 
-The project uses Application Insights availability tests instead of built-in App Service Health Check to avoid scaling up to a paid plan.
+Application Insights availability testing is preferred here because it checks the public `/health/` endpoint externally from multiple Azure locations and provides monitoring evidence for the deployed API.
 
 ---
 
@@ -332,27 +332,17 @@ The project uses Application Insights availability tests instead of built-in App
 
 The monitoring phase does not expose secrets.
 
-The monitoring verification script uses the local `.env` file for the admin API key. The `.env` file is ignored by Git and must not be committed.
+The monitoring verification script uses the local `.env` file for JWT demo credentials. The `.env` file is ignored by Git and must not be committed.
 
-Application Insights monitors the public `/health/` endpoint without requiring an API key.
+Application Insights monitors the public `/health/` endpoint without requiring JWT authentication.
 
-Protected endpoints are tested locally through the verification script using the admin API key.
-
----
-
-## Interview Explanation
-
-Simple explanation:
+Protected endpoints are tested through JWT authentication by logging in through `/auth/login` and sending the returned access token with:
 
 ```text
-I added Azure monitoring for the deployed FastAPI API. I enabled App Service logs, verified Log Stream, connected the app to Application Insights, and created a Standard availability test for the /health/ endpoint. I also configured an availability alert rule so the API can be monitored for downtime.
+Authorization: Bearer <access_token>
 ```
 
-Technical explanation:
-
-```text
-The deployed FastAPI container runs on Azure App Service. I enabled file-system application logging and verified container activity through Log Stream. Since built-in App Service Health Check requires a Basic plan, I kept the app on the Free tier and used Application Insights availability testing instead. The availability test calls the public /health/ endpoint every 5 minutes from multiple Azure regions and expects HTTP 200. An automatic alert rule triggers when multiple test locations fail.
-```
+JWT signing secrets and demo user credentials are stored in Azure Key Vault for the deployed App Service.
 
 ---
 

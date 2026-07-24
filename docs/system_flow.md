@@ -437,7 +437,7 @@ API client
     ↓
 FastAPI route
     ↓
-Authentication and RBAC check
+JWT authentication and RBAC check
     ↓
 Database query
     ↓
@@ -449,7 +449,11 @@ For example:
 ```text
 GET /executive/summary
         ↓
-Validate X-API-Key
+Validate JWT Bearer token
+        ↓
+Read role claim from token
+        ↓
+Check endpoint permission
         ↓
 Query vw_executive_summary
         ↓
@@ -480,33 +484,40 @@ This design allows:
 
 ---
 
-## 17. Authentication and RBAC Flow
+## 17. JWT Authentication and RBAC Flow
 
-Protected API routes require an API key.
+Protected API routes require JWT Bearer authentication.
 
 ```text
 Request
     ↓
-X-API-Key header
+Authorization: Bearer <access_token>
     ↓
-API key validation
+JWT signature and expiry validation
     ↓
-Role detection
+Username and role claim extraction
     ↓
 Route permission check
     ↓
 Response or access denied
 ```
 
+Authentication endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `/auth/login` | Authenticates a demo user and returns a JWT access token |
+| `/auth/me` | Returns the authenticated user's username and role |
+
 Roles:
 
 | Role | Access |
 |---|---|
 | Admin | Full API access |
-| Analyst | Business, operations, and insights access |
-| Viewer | Limited read-only access |
+| Analyst | Executive, operations, and insights access |
+| Viewer | Limited summary-level read-only access |
 
-This provides a simple but practical access-control layer.
+This provides a practical token-based access-control layer while keeping the project focused and understandable.
 
 ---
 
@@ -631,9 +642,12 @@ Secrets include:
 - Azure SQL database
 - Azure SQL username
 - Azure SQL password
-- Admin API key
-- Analyst API key
-- Viewer API key
+- JWT signing secret
+- Admin JWT username and password
+- Analyst JWT username and password
+- Viewer JWT username and password
+
+Non-sensitive JWT settings, such as the signing algorithm and token expiry, can remain as plain App Service settings.
 
 The FastAPI app does not directly call Key Vault.
 
@@ -739,11 +753,15 @@ This is the final cloud request flow after deployment:
 ```text
 User or API client
         ↓
+POST /auth/login
+        ↓
+JWT access token returned
+        ↓
 HTTPS request to Azure App Service
         ↓
 FastAPI container
         ↓
-API key validation
+JWT Bearer token validation
         ↓
 RBAC permission check
         ↓
@@ -759,7 +777,9 @@ Example:
 ```text
 GET /operations/alert-summary
         ↓
-X-API-Key validated as Admin or Analyst
+Authorization: Bearer <access_token>
+        ↓
+JWT validated as Admin or Analyst role
         ↓
 Query operational alert summary serving object
         ↓
